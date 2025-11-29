@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -46,7 +46,7 @@ export default function MapComponent({
   houses,
   onSelectHouse,
 }: MapComponentProps) {
-  const position: [number, number] = [40.7128, -74.006]; // Default to NYC
+  const position: [number, number] = [40.7128, -74.006]; 
 
   return (
     <div className="h-full w-full z-0">
