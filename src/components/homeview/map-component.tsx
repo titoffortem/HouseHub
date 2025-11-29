@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import type { House } from "@/lib/types";
-import { Button } from "../ui/button";
+import type { HouseWithId } from "@/lib/types";
 
 // Fix for default icon path issue with webpack
 if (typeof window !== 'undefined') {
@@ -19,8 +18,8 @@ if (typeof window !== 'undefined') {
 }
 
 interface MapComponentProps {
-  houses: House[];
-  onSelectHouse: (house: House) => void;
+  houses: HouseWithId[];
+  onSelectHouse: (house: HouseWithId) => void;
 }
 
 const customIcon = new L.Icon({
@@ -41,7 +40,7 @@ export default function MapComponent({
   useEffect(() => {
     // Initialize map only if the ref is available and map hasn't been initialized yet
     if (mapRef.current && !mapInstance.current) {
-      mapInstance.current = L.map(mapRef.current).setView([40.7128, -74.006], 13);
+      mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13); // Yaroslavl coordinates
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapInstance.current);
@@ -89,7 +88,11 @@ export default function MapComponent({
     // Fit bounds if houses are available
     if (houses.length > 0) {
         const bounds = new L.LatLngBounds(houses.map(h => h.coordinates));
-        map.fitBounds(bounds, { padding: [50, 50] });
+        if (map.getBounds().contains(bounds)) {
+            // No need to fit bounds if already visible
+        } else {
+            map.fitBounds(bounds, { padding: [50, 50] });
+        }
     }
 
   }, [houses, onSelectHouse]);

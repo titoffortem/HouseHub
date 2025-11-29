@@ -4,10 +4,11 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetFooter,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import type { House } from "@/lib/types";
+import type { HouseWithId } from "@/lib/types";
 import {
   BedDouble,
   Building,
@@ -18,19 +19,23 @@ import {
   Layers3,
   MapPin,
   Ruler,
-  Trash2,
+  Trash2 as TrashIcon,
   Wallet,
   Warehouse,
   Droplets,
   X,
+  Pencil,
 } from "lucide-react";
-import Image from "next/image";
 import { FloorPlan } from "./floor-plan";
+import { Button } from "../ui/button";
 
 interface PropertyDetailsProps {
-  house: House | null;
+  house: HouseWithId | null;
   open: boolean;
-  onOpenChange: () => void;
+  onOpenChange: (open: boolean) => void;
+  isAdmin: boolean;
+  onEdit: (house: HouseWithId) => void;
+  onDelete: (houseId: string) => void;
 }
 
 const DetailItem = ({
@@ -75,13 +80,16 @@ export function PropertyDetails({
   house,
   open,
   onOpenChange,
+  isAdmin,
+  onEdit,
+  onDelete,
 }: PropertyDetailsProps) {
   if (!house) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:w-[540px] p-0" side="left">
-        <ScrollArea className="h-full">
+      <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col" side="left">
+        <ScrollArea className="flex-grow">
           <div className="p-6">
             <SheetHeader>
               <SheetTitle className="font-headline text-2xl">
@@ -167,7 +175,7 @@ export function PropertyDetails({
                   value={house.hasElevator}
                 />
                 <BooleanItem
-                  icon={<Trash2 className="h-5 w-5" />}
+                  icon={<TrashIcon className="h-5 w-5" />}
                   label="Garbage Chute"
                   value={house.hasGarbageChute}
                 />
@@ -175,6 +183,29 @@ export function PropertyDetails({
             </div>
           </div>
         </ScrollArea>
+        {isAdmin && (
+          <>
+            <Separator />
+            <SheetFooter className="p-4 flex-shrink-0">
+              <div className="flex w-full gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => onEdit(house)}
+                >
+                  <Pencil className="mr-2 h-4 w-4" /> Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => onDelete(house.id)}
+                >
+                  <TrashIcon className="mr-2 h-4 w-4" /> Delete
+                </Button>
+              </div>
+            </SheetFooter>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );

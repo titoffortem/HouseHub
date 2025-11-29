@@ -1,5 +1,4 @@
 export type House = {
-  id: string;
   address: string;
   price: number;
   coordinates: [number, number];
@@ -17,3 +16,5 @@ export type House = {
   floorPlanUrl: string;
   floorPlanHint: string;
 };
+
+export type HouseWithId = House & { id: string };

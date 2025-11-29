@@ -1,118 +1,24 @@
-/**
- * Core Philosophy: This ruleset implements a Role-Based Access Control (RBAC) system
- * with two primary roles: public users and administrators. Public users, including those
- * not signed in, have read-only access to all house and floor plan data. Administrators
- * are granted full create, read, update, and delete (CRUD) permissions on this data.
- *
- * Data Structure: The data is organized into three top-level collections:
- * - /houses: Publicly readable collection of house information.
- * - /floor_plans: Publicly readable collection of floor plan images.
- * - /roles_admin: A private collection used as a lookup table to grant administrator
- *   privileges. Client access to this collection is completely blocked.
- *
- * Key Security Decisions:
- * - Public Read Access: To allow for easy data consumption by any client, `/houses`
- *   and `/floor_plans` are world-readable.
- * - Administrator-Only Writes: All write operations (create, update, delete) on
- *   `/houses` and `/floor_plans` are strictly limited to authenticated users whose
- *   UID exists as a document ID in the `/roles_admin` collection.
- * - Admin Role Management: The `/roles_admin` collection is not manageable by clients.
- *   Administrator roles must be assigned out-of-band (e.g., via the Firebase Console
- *   or a trusted server-side Admin SDK). This prevents users from escalating their
- *   own privileges.
- *
- * Denormalization for Authorization: Administrator status is determined by checking for
- * the existence of a document at `/roles_admin/{request.auth.uid}`. This is a highly
- * performant and secure pattern that avoids querying user profiles for a role field,
- * making authorization checks fast and simple.
- *
- * Structural Segregation: There is no mix of public/private data within a single
- * collection. All documents in `/houses` and `/floor_plans` are considered public,
- * simplifying list queries and security rules.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper Functions
-
-    /**
-     * Checks if the user is an administrator.
-     * Admin status is granted if a document with the user's UID exists in the
-     * /roles_admin collection. This is a fast and secure lookup.
-     */
     function isAdmin() {
-      return exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      // Admin status is granted if a document with the user's UID exists in the /roles_admin collection.
+      return request.auth != null && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
     }
 
-    /**
-     * Ensures an admin request is for an existing document.
-     * Used for update and delete operations to prevent modifying non-existent data.
-     */
-    function isExistingAdminRequest() {
-      return isAdmin() && resource != null;
-    }
-
-    /**
-     * Validates that the document's internal `id` field matches its document ID upon creation.
-     * Enforces data consistency between the path and the document's content.
-     */
-    function hasConsistentIdOnCreate(docId) {
-      return request.resource.data.id == docId;
-    }
-
-    /**
-     * Enforces immutability of the document's internal `id` field during an update.
-     * This prevents the core relational identifier of the document from being changed.
-     */
-    function hasImmutableIdOnUpdate() {
-      return request.resource.data.id == resource.data.id;
-    }
-
-    /**
-     * @description Publicly readable house data, writable only by administrators.
-     * @path /houses/{houseId}
-     * @allow (get) Any user, signed in or not, can read a specific house document.
-     * @deny (create) A non-administrator attempts to create a new house document.
-     * @principle Implements a "Public Read, Admin Write" pattern for shared data.
-     */
     match /houses/{houseId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isAdmin() && hasConsistentIdOnCreate(houseId);
-      allow update: if isExistingAdminRequest() && hasImmutableIdOnUpdate();
-      allow delete: if isExistingAdminRequest();
-    }
+      // Anyone can read house data.
+      allow read: if true;
 
-    /**
-     * @description Publicly readable floor plan data, writable only by administrators.
-     * @path /floor_plans/{floorPlanId}
-     * @allow (list) Any user, signed in or not, can list all floor plans.
-     * @deny (update) A non-administrator attempts to modify an existing floor plan document.
-     * @principle Implements a "Public Read, Admin Write" pattern, mirroring the /houses rules.
-     */
-    match /floor_plans/{floorPlanId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if isAdmin() && hasConsistentIdOnCreate(floorPlanId);
-      allow update: if isExistingAdminRequest() && hasImmutableIdOnUpdate();
-      allow delete: if isExistingAdminRequest();
+      // Only administrators can create, update, or delete houses.
+      allow write: if isAdmin();
     }
-
-    /**
-     * @description Private collection for managing administrator roles. This collection is
-     *              used for authorization lookups by the rules engine ONLY.
-     * @path /roles_admin/{administratorId}
-     * @allow No operations are permitted from the client.
-     * @deny (get) Any user, including an admin, attempts to read a role document.
-     * @principle Secures metadata used for authorization by completely locking down client access.
-     */
-    match /roles_admin/{administratorId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+    
+    match /roles_admin/{userId} {
+      // No client should be able to read or write to the admin roles directly.
+      // These roles should be managed from the Firebase Console.
+      allow read, write: if false;
     }
   }
 }
