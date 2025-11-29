@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -8,14 +8,16 @@ import type { House } from "@/lib/types";
 import { Button } from "../ui/button";
 
 // Fix for default icon path issue with webpack
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+if (typeof window !== 'undefined') {
+  delete (L.Icon.Default.prototype as any)._getIconUrl;
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl:
-    "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl:
+      "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  });
+}
 
 interface MapComponentProps {
   houses: House[];
@@ -44,21 +46,25 @@ export default function MapComponent({
   houses,
   onSelectHouse,
 }: MapComponentProps) {
-  const position: [number, number] = [40.7128, -74.006]; // Default to NYC
   const mapRef = useRef<L.Map | null>(null);
-  
+  const [mapReady, setMapReady] = useState(false);
+  const position: [number, number] = [40.7128, -74.006]; // Default to NYC
+
   useEffect(() => {
+    setMapReady(true);
     // Cleanup function to remove the map instance
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
+      setMapReady(false);
     };
   }, []);
 
   return (
-    <div className="h-full w-full z-0">
+    <div className="h-full w-full z-0" key={mapReady ? 'map-ready' : 'map-loading'}>
+      {mapReady && (
         <MapContainer
           center={position}
           zoom={13}
@@ -85,6 +91,7 @@ export default function MapComponent({
           ))}
           <MapUpdater houses={houses} />
         </MapContainer>
+      )}
     </div>
   );
 }
