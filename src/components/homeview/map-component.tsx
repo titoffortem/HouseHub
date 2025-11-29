@@ -45,21 +45,26 @@ export default function MapComponent({
   onSelectHouse,
 }: MapComponentProps) {
   const position: [number, number] = [40.7128, -74.006]; // Default to NYC
-  const mapRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
   
-  if (mapRef.current && (mapRef.current as any)._leaflet_id) {
-    return (
-      <div ref={mapRef} className="h-full w-full z-0" />
-    );
-  }
+  useEffect(() => {
+    // Cleanup function to remove the map instance
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
+    };
+  }, []);
 
   return (
-    <div ref={mapRef} className="h-full w-full z-0">
+    <div className="h-full w-full z-0">
         <MapContainer
           center={position}
           zoom={13}
           scrollWheelZoom={true}
           style={{ height: "100%", width: "100%" }}
+          whenCreated={map => mapRef.current = map}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
