@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -46,52 +46,35 @@ export default function MapComponent({
   houses,
   onSelectHouse,
 }: MapComponentProps) {
-  const mapRef = useRef<L.Map | null>(null);
-  const [mapReady, setMapReady] = useState(false);
   const position: [number, number] = [40.7128, -74.006]; // Default to NYC
 
-  useEffect(() => {
-    setMapReady(true);
-    // Cleanup function to remove the map instance
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-      setMapReady(false);
-    };
-  }, []);
-
   return (
-    <div className="h-full w-full z-0" key={mapReady ? 'map-ready' : 'map-loading'}>
-      {mapReady && (
-        <MapContainer
-          center={position}
-          zoom={13}
-          scrollWheelZoom={true}
-          style={{ height: "100%", width: "100%" }}
-          whenCreated={map => mapRef.current = map}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          {houses.map((house) => (
-            <Marker key={house.id} position={house.coordinates} icon={customIcon}>
-              <Popup>
-                <div className="p-1">
-                  <h3 className="font-bold text-md font-headline">{house.address}</h3>
-                  <p className="text-sm text-muted-foreground">{house.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                  <Button size="sm" className="mt-2 w-full" variant="accent" onClick={() => onSelectHouse(house)}>
-                    View Details
-                  </Button>
-                </div>
-              </Popup>
-            </Marker>
-          ))}
-          <MapUpdater houses={houses} />
-        </MapContainer>
-      )}
+    <div className="h-full w-full z-0">
+      <MapContainer
+        center={position}
+        zoom={13}
+        scrollWheelZoom={true}
+        style={{ height: "100%", width: "100%" }}
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {houses.map((house) => (
+          <Marker key={house.id} position={house.coordinates} icon={customIcon}>
+            <Popup>
+              <div className="p-1">
+                <h3 className="font-bold text-md font-headline">{house.address}</h3>
+                <p className="text-sm text-muted-foreground">{house.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+                <Button size="sm" className="mt-2 w-full" variant="accent" onClick={() => onSelectHouse(house)}>
+                  View Details
+                </Button>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+        <MapUpdater houses={houses} />
+      </MapContainer>
     </div>
   );
 }
