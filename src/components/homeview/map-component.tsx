@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import React, { useEffect, useRef, useState } from 'react';
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import type { House } from "@/lib/types";
@@ -31,50 +30,69 @@ const customIcon = new L.Icon({
     popupAnchor: [0, -32],
 });
 
-function MapUpdater({ houses }: { houses: House[] }) {
-  const map = useMap();
-  useEffect(() => {
-    if (houses.length > 0) {
-      const bounds = new L.LatLngBounds(houses.map(h => h.coordinates));
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
-  }, [houses, map]);
-  return null;
-}
-
 export default function MapComponent({
   houses,
   onSelectHouse,
 }: MapComponentProps) {
-  const position: [number, number] = [40.7128, -74.006]; 
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstance = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
 
-  return (
-    <div className="h-full w-full z-0">
-      <MapContainer
-        center={position}
-        zoom={13}
-        scrollWheelZoom={true}
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {houses.map((house) => (
-          <Marker key={house.id} position={house.coordinates} icon={customIcon}>
-            <Popup>
-              <div className="p-1">
-                <h3 className="font-bold text-md font-headline">{house.address}</h3>
-                <p className="text-sm text-muted-foreground">{house.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-                <Button size="sm" className="mt-2 w-full" variant="accent" onClick={() => onSelectHouse(house)}>
-                  View Details
-                </Button>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-        <MapUpdater houses={houses} />
-      </MapContainer>
-    </div>
-  );
+  useEffect(() => {
+    // Initialize map only if the ref is available and map hasn't been initialized yet
+    if (mapRef.current && !mapInstance.current) {
+      mapInstance.current = L.map(mapRef.current).setView([40.7128, -74.006], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(mapInstance.current);
+    }
+
+    // Cleanup function to destroy the map instance
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+      }
+    };
+  }, []); // Empty dependency array ensures this runs only once on mount and unmount
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => marker.remove());
+    markersRef.current = [];
+
+    // Add new markers
+    houses.forEach(house => {
+      const marker = L.marker(house.coordinates, { icon: customIcon }).addTo(map);
+      
+      const popupContent = document.createElement('div');
+      popupContent.className = "p-1";
+
+      popupContent.innerHTML = `
+        <h3 class="font-bold text-md font-headline">${house.address}</h3>
+        <p class="text-sm text-muted-foreground">${house.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
+      `;
+
+      const button = document.createElement('button');
+      button.className = "mt-2 w-full text-white bg-accent hover:bg-accent/90 focus:ring-4 focus:outline-none focus:ring-ring font-medium rounded-lg text-sm px-4 py-2 text-center";
+      button.innerText = 'View Details';
+      button.onclick = () => onSelectHouse(house);
+
+      popupContent.appendChild(button);
+      marker.bindPopup(popupContent);
+      markersRef.current.push(marker);
+    });
+
+    // Fit bounds if houses are available
+    if (houses.length > 0) {
+        const bounds = new L.LatLngBounds(houses.map(h => h.coordinates));
+        map.fitBounds(bounds, { padding: [50, 50] });
+    }
+
+  }, [houses, onSelectHouse]);
+  
+  return <div ref={mapRef} className="h-full w-full z-0" />;
 }
