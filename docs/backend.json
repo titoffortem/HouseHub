@@ -1,0 +1,194 @@
+{
+  "entities": {
+    "House": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "House",
+      "type": "object",
+      "description": "Represents a house with its details and location.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the House entity."
+        },
+        "address": {
+          "type": "string",
+          "description": "The address of the house."
+        },
+        "size": {
+          "type": "number",
+          "description": "The size of the house in square meters."
+        },
+        "numberOfRooms": {
+          "type": "number",
+          "description": "The number of rooms in the house."
+        },
+        "yearOfConstruction": {
+          "type": "number",
+          "description": "The year the house was constructed."
+        },
+        "wallMaterial": {
+          "type": "string",
+          "description": "The material used for the walls of the house."
+        },
+        "buildingSeries": {
+          "type": "string",
+          "description": "The building series the house belongs to."
+        },
+        "numberOfFloors": {
+          "type": "number",
+          "description": "The number of floors in the house."
+        },
+        "elevator": {
+          "type": "boolean",
+          "description": "Indicates whether the house has an elevator."
+        },
+        "floorType": {
+          "type": "string",
+          "description": "The type of flooring in the house."
+        },
+        "foundationType": {
+          "type": "string",
+          "description": "The type of foundation the house has."
+        },
+        "garbageChute": {
+          "type": "boolean",
+          "description": "Indicates whether the house has a garbage chute."
+        },
+        "hotWaterSupply": {
+          "type": "string",
+          "description": "The type of hot water supply system in the house."
+        },
+        "latitude": {
+          "type": "number",
+          "description": "The latitude coordinate of the house location."
+        },
+        "longitude": {
+          "type": "number",
+          "description": "The longitude coordinate of the house location."
+        },
+        "floorPlanId": {
+          "type": "string",
+          "description": "Reference to FloorPlan. (Relationship: House 1:1 FloorPlan)"
+        }
+      },
+      "required": [
+        "id",
+        "address",
+        "size",
+        "numberOfRooms",
+        "yearOfConstruction",
+        "wallMaterial",
+        "buildingSeries",
+        "numberOfFloors",
+        "elevator",
+        "floorType",
+        "foundationType",
+        "garbageChute",
+        "hotWaterSupply",
+        "latitude",
+        "longitude",
+        "floorPlanId"
+      ]
+    },
+    "FloorPlan": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FloorPlan",
+      "type": "object",
+      "description": "Represents a floor plan of a house.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the FloorPlan entity."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image representing the floor plan.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "imageUrl"
+      ]
+    },
+    "Administrator": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Administrator",
+      "type": "object",
+      "description": "Represents an administrator user who can upload and edit house information.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Administrator entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The username of the administrator."
+        }
+      },
+      "required": [
+        "id",
+        "username"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/houses/{houseId}",
+        "definition": {
+          "entityName": "House",
+          "schema": {
+            "$ref": "#/backend/entities/House"
+          },
+          "description": "Stores the details of each house, including its address, size, number of rooms, and other relevant characteristics. Includes latitude and longitude for map integration.",
+          "params": [
+            {
+              "name": "houseId",
+              "description": "Unique identifier for the house."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/floor_plans/{floorPlanId}",
+        "definition": {
+          "entityName": "FloorPlan",
+          "schema": {
+            "$ref": "#/backend/entities/FloorPlan"
+          },
+          "description": "Stores the floor plan images and related information for each house.",
+          "params": [
+            {
+              "name": "floorPlanId",
+              "description": "Unique identifier for the floor plan."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/roles_admin/{administratorId}",
+        "definition": {
+          "entityName": "Administrator",
+          "schema": {
+            "$ref": "#/backend/entities/Administrator"
+          },
+          "description": "Collection to store administrator roles. Document existence determines admin privileges.",
+          "params": [
+            {
+              "name": "administratorId",
+              "description": "Unique identifier for the administrator (user ID)."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to facilitate the storage and retrieval of house and floor plan data, with a special consideration for administrator privileges to edit the house information. It's built upon the principle of Authorization Independence, meaning that security rules can be evaluated without needing to retrieve data from parent documents, thus improving performance and security. This is achieved by denormalizing admin privileges. The structure also allows administrators to manage house data and provides necessary location for users. Since the users can only view, not edit, the houses are global, not nested under users. The structure uses homogeneous security posture where applicable.\n\nThe structure supports the required QAPs (Rules are not Filters) by using dedicated collections for houses and floor plans. Access to modify house data is restricted to administrators, enforced by checking the existence of an administrator document for the requesting user in the `roles_admin` collection."
+  }
+}
