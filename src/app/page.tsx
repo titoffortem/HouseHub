@@ -4,7 +4,6 @@
 import * as React from "react";
 import { House, HouseWithId, Coordinates } from "@/lib/types";
 import { Header } from "@/components/homeview/header";
-import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
@@ -174,9 +173,8 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full bg-background">
-      <Header />
+      <Header onSearch={handleSearch} />
       <main className="relative h-[calc(100vh-4rem)] w-full">
-        <PropertySearch onSearch={handleSearch} />
         {isLoading ? (
           <div className="flex items-center justify-center h-full">Загрузка домов...</div>
         ) : (

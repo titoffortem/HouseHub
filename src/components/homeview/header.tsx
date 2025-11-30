@@ -12,8 +12,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import { PropertySearch } from "./property-search";
 
-export function Header() {
+interface HeaderProps {
+  onSearch: (searchTerm: string, filters: { rooms: number | null; minPrice: number; maxPrice: number }) => void;
+}
+
+
+export function Header({ onSearch }: HeaderProps) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
 
@@ -41,6 +47,9 @@ export function Header() {
       <div className="flex items-center gap-2">
         <Image src="https://sun9-20.userapi.com/s/v1/ig2/uIdtH8WL93WBwVCjfTiSSkbYOzSbkBJsjhGAEtVCLKCqghZhVWGJHZb1uDrCDEfXHVPdJCfaqZOcpDG4S_Yrt4LD.jpg?quality=95&as=32x32,48x48,72x72,108x108,160x160,240x240,308x308&from=bu&cs=308x0" alt="Логотип HomeView" width={40} height={40} className="rounded-md" />
         <span className="font-headline text-xl font-bold">HomeView</span>
+      </div>
+      <div className="flex-1 flex justify-center px-8">
+        <PropertySearch onSearch={onSearch} />
       </div>
       <div>
         {isUserLoading ? (
