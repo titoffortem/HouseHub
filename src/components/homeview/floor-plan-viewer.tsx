@@ -4,10 +4,11 @@
 import { useState } from "react";
 import Image from "next/image";
 import { HouseWithId } from "@/lib/types";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, X } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface FloorPlanViewerProps {
   house: HouseWithId;
@@ -50,6 +51,9 @@ export function FloorPlanViewer({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-screen h-screen max-w-full max-h-full bg-black/90 p-4 sm:p-6 flex flex-col border-0 rounded-none">
+        <DialogTitle className="sr-only">
+          {selectedFloor ? `Floor plan for floor ${selectedFloor}` : "Select a floor to view its plan"}
+        </DialogTitle>
         <div className="absolute top-4 right-4 z-20 flex gap-2">
           {selectedFloor && (
             <Button
