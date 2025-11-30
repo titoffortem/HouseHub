@@ -22,12 +22,20 @@ interface MapComponentProps {
   onSelectHouse: (house: HouseWithId) => void;
 }
 
-const customIcon = new L.Icon({
-    iconUrl: 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="hsl(231 48% 48%)" width="32" height="32"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" fill="white" /></svg>'),
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
-});
+const defaultCircleStyle = {
+  color: 'hsl(231 48% 48%)',
+  fillColor: 'hsl(231 48% 48%)',
+  fillOpacity: 0.2,
+  radius: 20,
+  weight: 2,
+};
+
+const hoverCircleStyle = {
+  ...defaultCircleStyle,
+  fillOpacity: 0.6,
+  radius: 25,
+};
+
 
 export default function MapComponent({
   houses,
@@ -35,7 +43,7 @@ export default function MapComponent({
 }: MapComponentProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
-  const markersRef = useRef<L.Marker[]>([]);
+  const layersRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     // Initialize map only if the ref is available and map hasn't been initialized yet
@@ -44,6 +52,7 @@ export default function MapComponent({
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapInstance.current);
+      layersRef.current = L.layerGroup().addTo(mapInstance.current);
     }
 
     // Cleanup function to destroy the map instance
@@ -56,42 +65,37 @@ export default function MapComponent({
   }, []); // Empty dependency array ensures this runs only once on mount and unmount
 
   useEffect(() => {
-    const map = mapInstance.current;
-    if (!map) return;
+    const layers = layersRef.current;
+    if (!layers) return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
+    // Clear existing layers
+    layers.clearLayers();
 
-    // Add new markers
+    // Add new circles for each house
     houses.forEach(house => {
-      const marker = L.marker(house.coordinates, { icon: customIcon }).addTo(map);
-      
-      const popupContent = document.createElement('div');
-      popupContent.className = "p-1";
+        const circle = L.circle(house.coordinates, defaultCircleStyle);
 
-      popupContent.innerHTML = `
-        <h3 class="font-bold text-md font-headline">${house.address}</h3>
-        <p class="text-sm text-muted-foreground">${house.price.toLocaleString('en-US', { style: 'currency', currency: 'USD' })}</p>
-      `;
+        circle.on('mouseover', function (e) {
+            this.setStyle(hoverCircleStyle);
+            this.bringToFront();
+        });
 
-      const button = document.createElement('button');
-      button.className = "mt-2 w-full text-white bg-accent hover:bg-accent/90 focus:ring-4 focus:outline-none focus:ring-ring font-medium rounded-lg text-sm px-4 py-2 text-center";
-      button.innerText = 'View Details';
-      button.onclick = () => onSelectHouse(house);
+        circle.on('mouseout', function (e) {
+            this.setStyle(defaultCircleStyle);
+        });
+        
+        circle.on('click', () => {
+            onSelectHouse(house);
+        });
 
-      popupContent.appendChild(button);
-      marker.bindPopup(popupContent);
-      markersRef.current.push(marker);
+        layers.addLayer(circle);
     });
 
     // Fit bounds if houses are available
     if (houses.length > 0) {
         const bounds = new L.LatLngBounds(houses.map(h => h.coordinates));
-        if (map.getBounds().contains(bounds)) {
-            // No need to fit bounds if already visible
-        } else {
-            map.fitBounds(bounds, { padding: [50, 50] });
+        if (mapInstance.current && !mapInstance.current.getBounds().contains(bounds)) {
+            mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
         }
     }
 
