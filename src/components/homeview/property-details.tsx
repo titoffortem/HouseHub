@@ -96,13 +96,10 @@ export function PropertyDetails({
                 {house.address}
               </SheetTitle>
               <SheetDescription className="flex items-center gap-2 text-lg">
-                <Wallet className="h-5 w-5 text-accent" />
-                <span>
-                  {house.price.toLocaleString("en-US", {
+                {house.price.toLocaleString("en-US", {
                     style: "currency",
                     currency: "USD",
                   })}
-                </span>
               </SheetDescription>
             </SheetHeader>
 
@@ -124,24 +121,9 @@ export function PropertyDetails({
             </h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-6">
               <DetailItem
-                icon={<Ruler className="h-5 w-5" />}
-                label="Size"
-                value={`${house.size} m²`}
-              />
-              <DetailItem
-                icon={<BedDouble className="h-5 w-5" />}
-                label="Rooms"
-                value={house.rooms}
-              />
-              <DetailItem
                 icon={<Calendar className="h-5 w-5" />}
                 label="Year Built"
                 value={house.year}
-              />
-              <DetailItem
-                icon={<Home className="h-5 w-5" />}
-                label="Wall Material"
-                value={house.wallMaterial}
               />
               <DetailItem
                 icon={<Building className="h-5 w-5" />}
@@ -152,21 +134,6 @@ export function PropertyDetails({
                 icon={<ChevronsUpDown className="h-5 w-5" />}
                 label="Floors"
                 value={house.floors}
-              />
-              <DetailItem
-                icon={<MapPin className="h-5 w-5" />}
-                label="Floor Type"
-                value={house.floorType}
-              />
-              <DetailItem
-                icon={<Warehouse className="h-5 w-5" />}
-                label="Foundation"
-                value={house.foundationType}
-              />
-              <DetailItem
-                icon={<Droplets className="h-5 w-5" />}
-                label="Hot Water"
-                value={house.hotWaterSupply}
               />
               <div className="col-span-2 grid grid-cols-2 gap-4">
                 <BooleanItem
