@@ -44,9 +44,6 @@ export default function Home() {
       );
     }
 
-    // Since price and rooms are removed, we remove filtering by them.
-    // We can re-add them if needed in the future.
-
     setFilteredHouses(results);
   };
 
@@ -72,12 +69,11 @@ export default function Home() {
     if (!firestore || !user) return;
 
     try {
-      // Dynamically import the provider only on the client-side when the function is called.
       const { OpenStreetMapProvider } = await import('leaflet-geosearch');
       
       const provider = new OpenStreetMapProvider({
          params: {
-          'polygon_geojson': 1, // Request polygon geometry
+          'polygon_geojson': 1,
           'addressdetails': 1,
          }
       });
