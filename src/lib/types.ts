@@ -9,11 +9,6 @@ export type House = {
   wallMaterial: string;
   buildingSeries: string;
   floors: number;
-  hasElevator: boolean;
-  floorType: string;
-  foundationType: string;
-  hasGarbageChute: boolean;
-  hotWaterSupply: string;
   floorPlanUrl: string;
   floorPlanHint: string;
 };

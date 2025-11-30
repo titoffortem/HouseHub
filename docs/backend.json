@@ -44,26 +44,6 @@
           "type": "number",
           "description": "The number of floors in the house."
         },
-        "hasElevator": {
-          "type": "boolean",
-          "description": "Indicates whether the house has an elevator."
-        },
-        "floorType": {
-          "type": "string",
-          "description": "The type of flooring in the house."
-        },
-        "foundationType": {
-          "type": "string",
-          "description": "The type of foundation the house has."
-        },
-        "hasGarbageChute": {
-          "type": "boolean",
-          "description": "Indicates whether the house has a garbage chute."
-        },
-        "hotWaterSupply": {
-          "type": "string",
-          "description": "The type of hot water supply system in the house."
-        },
         "floorPlanUrl": {
           "type": "string",
           "description": "URL of the image representing the floor plan.",
@@ -84,11 +64,6 @@
         "wallMaterial",
         "buildingSeries",
         "floors",
-        "hasElevator",
-        "floorType",
-        "foundationType",
-        "hasGarbageChute",
-        "hotWaterSupply",
         "floorPlanUrl",
         "floorPlanHint"
       ]

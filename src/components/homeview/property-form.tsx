@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { House, HouseWithId } from "@/lib/types";
 
@@ -27,11 +26,6 @@ const formSchema = z.object({
   wallMaterial: z.string().min(1),
   buildingSeries: z.string().min(1),
   floors: z.coerce.number().int().positive(),
-  floorType: z.string().min(1),
-  foundationType: z.string().min(1),
-  hotWaterSupply: z.string().min(1),
-  hasElevator: z.boolean().default(false),
-  hasGarbageChute: z.boolean().default(false),
   floorPlanUrl: z.string().url(),
   floorPlanHint: z.string().min(1),
 });
@@ -70,11 +64,6 @@ export function PropertyForm({
           wallMaterial: "",
           buildingSeries: "",
           floors: 1,
-          floorType: "",
-          foundationType: "",
-          hotWaterSupply: "",
-          hasElevator: false,
-          hasGarbageChute: false,
           floorPlanUrl: "https://picsum.photos/seed/new/800/600",
           floorPlanHint: "floor plan",
         },
@@ -144,39 +133,6 @@ export function PropertyForm({
                     <Input id="floors" type="number" {...register("floors")} />
                     {errors.floors && <p className="text-destructive text-sm">{errors.floors.message}</p>}
                 </div>
-                <div>
-                    <Label htmlFor="floorType">Floor Type</Label>
-                    <Input id="floorType" {...register("floorType")} />
-                    {errors.floorType && <p className="text-destructive text-sm">{errors.floorType.message}</p>}
-                </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="foundationType">Foundation Type</Label>
-                    <Input id="foundationType" {...register("foundationType")} />
-                    {errors.foundationType && <p className="text-destructive text-sm">{errors.foundationType.message}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="hotWaterSupply">Hot Water Supply</Label>
-                    <Input id="hotWaterSupply" {...register("hotWaterSupply")} />
-                    {errors.hotWaterSupply && <p className="text-destructive text-sm">{errors.hotWaterSupply.message}</p>}
-                </div>
-            </div>
-            <div className="flex items-center space-x-2">
-                <Controller
-                    control={control}
-                    name="hasElevator"
-                    render={({ field }) => <Switch id="hasElevator" checked={field.value} onCheckedChange={field.onChange} />}
-                />
-                <Label htmlFor="hasElevator">Has Elevator</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-                <Controller
-                    control={control}
-                    name="hasGarbageChute"
-                    render={({ field }) => <Switch id="hasGarbageChute" checked={field.value} onCheckedChange={field.onChange} />}
-                />
-                <Label htmlFor="hasGarbageChute">Has Garbage Chute</Label>
             </div>
              <div>
                 <Label htmlFor="floorPlanUrl">Floor Plan URL</Label>
