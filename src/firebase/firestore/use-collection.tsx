@@ -86,37 +86,43 @@ export function useCollection<T = any>(
       },
       (error: FirestoreError) => {
         // This logic extracts the path from either a ref or a query
-        let path: string = 'unknown/path';
-        if (memoizedTargetRefOrQuery) { // Check if the ref/query is defined before accessing properties
-          if (memoizedTargetRefOrQuery.type === 'collection') {
-              path = (memoizedTargetRefOrQuery as CollectionReference).path;
-          } else if (memoizedTargetRefOrQuery.type === 'query') {
-              const internalQuery = memoizedTargetRefOrQuery as unknown as InternalQuery;
-              if (internalQuery._query?.path) {
-                  path = internalQuery._query.path.canonicalString();
-              }
+        let path: string | undefined;
+        if (memoizedTargetRefOrQuery) {
+          if ('path' in memoizedTargetRefOrQuery) {
+            path = (memoizedTargetRefOrQuery as CollectionReference).path;
+          } else if ('_query' in memoizedTargetRefOrQuery) {
+            const internalQuery = memoizedTargetRefOrQuery as unknown as InternalQuery;
+            if (internalQuery._query?.path) {
+              path = internalQuery._query.path.canonicalString();
+            }
           }
         }
-
-
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        })
-
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
-
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
+        
+        if (path) {
+            const contextualError = new FirestorePermissionError({
+              operation: 'list',
+              path,
+            });
+    
+            setError(contextualError);
+            // trigger global error propagation
+            errorEmitter.emit('permission-error', contextualError);
+        } else {
+            // Handle cases where path is not available, maybe log a different error
+             setError(new Error("Failed to determine Firestore path for permission error."));
+        }
+        
+        setData(null);
+        setIsLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    throw new Error('memoizedTargetRefOrQuery was not properly memoized using useMemoFirebase');
   }
+  
   return { data, isLoading, error };
 }
