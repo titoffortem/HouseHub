@@ -1,4 +1,5 @@
 
+
 'use client';
     
 import {
@@ -67,13 +68,14 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
 /**
  * Initiates a deleteDoc operation for a document reference.
  */
-export function deleteDocumentNonBlocking(docRef: DocumentReference) {
-  deleteDoc(docRef)
-    .catch(error => {
+export function deleteDocumentNonBlocking(docRef: DocumentReference): Promise<void> {
+  return deleteDoc(docRef).catch(error => {
       const permissionError = new FirestorePermissionError({
         path: docRef.path,
         operation: 'delete',
       });
       errorEmitter.emit('permission-error', permissionError);
+      // Re-throw the original error to allow the caller to handle it if needed
+      throw error;
     });
 }
