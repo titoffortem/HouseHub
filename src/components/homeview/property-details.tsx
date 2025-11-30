@@ -13,11 +13,8 @@ import {
   Building,
   Calendar,
   ChevronsUpDown,
-  Layers3,
   Trash2 as TrashIcon,
-  X,
   Pencil,
-  Check,
 } from "lucide-react";
 import { FloorPlan } from "./floor-plan";
 import { Button } from "../ui/button";
@@ -49,26 +46,6 @@ const DetailItem = ({
       <p className="text-sm text-muted-foreground">{label}</p>
       <p className="font-medium text-foreground">{value}</p>
     </div>
-  </div>
-);
-
-const BooleanItem = ({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: boolean;
-}) => (
-  <div className="flex items-center gap-3">
-    <div className="text-muted-foreground">{icon}</div>
-    <p className="font-medium text-foreground">{label}</p>
-    {value ? (
-      <Check className="h-5 w-5 text-green-500" />
-    ) : (
-      <X className="h-5 w-5 text-destructive" />
-    )}
   </div>
 );
 
@@ -134,19 +111,6 @@ export function PropertyDetails({
                     Посмотреть планировки
                   </Button>
                 </div>
-
-                <div className="col-span-2 grid grid-cols-2 gap-4">
-                  <BooleanItem
-                    icon={<Layers3 className="h-5 w-5" />}
-                    label="Elevator"
-                    value={house.hasElevator}
-                  />
-                  <BooleanItem
-                    icon={<TrashIcon className="h-5 w-5" />}
-                    label="Garbage Chute"
-                    value={house.hasGarbageChute}
-                  />
-                </div>
               </div>
             </div>
           </ScrollArea>
@@ -185,4 +149,3 @@ export function PropertyDetails({
     </>
   );
 }
-
