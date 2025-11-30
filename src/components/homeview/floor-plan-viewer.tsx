@@ -3,12 +3,11 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { HouseWithId, FloorPlan } from "@/lib/types";
+import { HouseWithId } from "@/lib/types";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, X } from "lucide-react";
 import { ScrollArea } from "../ui/scroll-area";
-import { cn } from "@/lib/utils";
 
 interface FloorPlanViewerProps {
   house: HouseWithId;
@@ -69,7 +68,6 @@ export function FloorPlanViewer({
                 fill
                 className="object-contain"
                 sizes="100vw"
-                data-ai-hint={selectedPlan.hint}
               />
             </div>
           ) : (

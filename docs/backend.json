@@ -29,19 +29,15 @@
     "FloorPlan": {
       "title": "FloorPlan",
       "type": "object",
-      "description": "Represents a single floor plan with its URL and AI hint.",
+      "description": "Represents a single floor plan with its URL.",
       "properties": {
         "url": {
           "type": "string",
           "description": "URL of the image for the floor plan.",
           "format": "uri"
-        },
-        "hint": {
-          "type": "string",
-          "description": "A hint for AI to understand the image."
         }
       },
-      "required": ["url", "hint"]
+      "required": ["url"]
     },
     "House": {
       "title": "House",

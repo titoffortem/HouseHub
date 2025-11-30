@@ -11,7 +11,6 @@ export type Coordinates = {
 
 export type FloorPlan = {
   url: string;
-  hint: string;
 };
 
 export type House = {

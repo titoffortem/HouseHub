@@ -16,14 +16,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { House, HouseWithId, FloorPlan } from "@/lib/types";
+import { House, HouseWithId } from "@/lib/types";
 import { useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 
 const floorPlanSchema = z.object({
   url: z.string().url("Must be a valid URL"),
-  hint: z.string().min(1, "Hint is required"),
 });
 
 const formSchema = z.object({
@@ -80,10 +79,10 @@ export function PropertyForm({
             year: new Date().getFullYear(),
             buildingSeries: "",
             floors: 1,
-            imageUrl: "https://picsum.photos/seed/house/800/600",
+            imageUrl: "",
             imageHint: "modern building",
             floorPlans: [
-              { url: "https://picsum.photos/seed/plan1/800/600", hint: "floor plan 1" },
+              { url: "" },
             ],
           }
       );
@@ -157,7 +156,7 @@ export function PropertyForm({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ url: `https://picsum.photos/seed/plan${fields.length + 1}/800/600`, hint: `floor plan ${fields.length + 1}` })}
+                  onClick={() => append({ url: "" })}
                 >
                   <Plus className="mr-2 h-4 w-4" /> Add Floor
                 </Button>
@@ -173,14 +172,6 @@ export function PropertyForm({
                       {...register(`floorPlans.${index}.url`)}
                     />
                     {errors.floorPlans?.[index]?.url && <p className="text-destructive text-sm">{errors.floorPlans[index].url.message}</p>}
-                  </div>
-                  <div className="space-y-1">
-                    <Label htmlFor={`floorPlans.${index}.hint`}>Floor Plan Hint</Label>
-                    <Input
-                      id={`floorPlans.${index}.hint`}
-                      {...register(`floorPlans.${index}.hint`)}
-                    />
-                     {errors.floorPlans?.[index]?.hint && <p className="text-destructive text-sm">{errors.floorPlans[index].hint.message}</p>}
                   </div>
                    <Button
                     type="button"
