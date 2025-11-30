@@ -25,7 +25,7 @@ interface MapComponentProps {
 
 const isPolygon = (coords: any): coords is [number, number][] => {
     // A valid polygon is an array of arrays, and the first inner array contains two numbers.
-    return Array.isArray(coords) && Array.isArray(coords[0]) && typeof coords[0][0] === 'number';
+    return Array.isArray(coords) && Array.isArray(coords[0]) && Array.isArray(coords[0]) && typeof coords[0][0] === 'number';
 }
 
 export default function MapComponent({
@@ -62,7 +62,7 @@ export default function MapComponent({
     const allBounds: L.LatLng[] = [];
 
     houses.forEach(house => {
-        let layer: L.Layer;
+        let layer: L.Layer | null = null;
 
         if (isPolygon(house.coordinates)) {
             const latLngs = house.coordinates as L.LatLngExpression[];
@@ -73,35 +73,35 @@ export default function MapComponent({
                 fillOpacity: 0.2
             });
             latLngs.forEach(coord => {
-              if (Array.isArray(coord)) {
+              if (Array.isArray(coord) && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
                  allBounds.push(L.latLng(coord[0], coord[1]))
               }
             });
-        } else {
+        } else if (Array.isArray(house.coordinates) && typeof house.coordinates[0] === 'number' && typeof house.coordinates[1] === 'number') {
             const latLng = house.coordinates as L.LatLngExpression;
             layer = L.circleMarker(latLng, {
-                radius: 8,
+                radius: 6, // Fixed radius in pixels
                 fillColor: "hsl(231 48% 48%)",
                 color: "#000",
                 weight: 1,
                 opacity: 1,
                 fillOpacity: 0.8
             });
-            if (Array.isArray(latLng)) {
-              allBounds.push(L.latLng(latLng[0], latLng[1]));
-            }
+             allBounds.push(L.latLng(house.coordinates[0], house.coordinates[1]));
         }
       
-      layer.on('click', () => {
-          onSelectHouse(house);
-      });
-
-      layers.addLayer(layer);
+      if (layer) {
+        layer.on('click', () => {
+            onSelectHouse(house);
+        });
+        layers.addLayer(layer);
+      }
     });
 
-    if (allBounds.length > 0) {
+    if (allBounds.length > 0 && mapInstance.current) {
         const bounds = new L.LatLngBounds(allBounds);
-        if (mapInstance.current) {
+        // Check if bounds are valid to prevent errors
+        if (bounds.isValid()) {
             mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
         }
     }
