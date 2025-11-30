@@ -6,8 +6,8 @@ import { Header } from "@/components/homeview/header";
 import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
-import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { collection, doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
@@ -27,9 +27,7 @@ export default function Home() {
   const housesCollection = useMemoFirebase(() => collection(firestore, "houses"), [firestore]);
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
 
-  const adminRoleRef = useMemoFirebase(() => user ? doc(firestore, 'roles_admin', user.uid) : null, [firestore, user]);
-  const { data: adminRole } = useDoc(adminRoleRef);
-  const isAdmin = !!adminRole;
+  const isAdmin = !!user; // Show controls if the user is logged in. Permissions are enforced by Firestore rules.
 
   React.useEffect(() => {
     if (allHouses) {
@@ -75,42 +73,27 @@ export default function Home() {
     setEditingHouse(null);
   };
 
-  const handleFormSubmit = async (values: House) => {
-    try {
-      if (editingHouse) {
-        const houseRef = doc(firestore, 'houses', editingHouse.id);
-        updateDocumentNonBlocking(houseRef, values);
-        toast({ title: "House updated successfully!" });
-      } else {
-        addDocumentNonBlocking(collection(firestore, 'houses'), values);
-        toast({ title: "House added successfully!" });
-      }
-      handleFormClose();
-    } catch (error) {
-      console.error("Error submitting form: ", error);
-      toast({
-        variant: "destructive",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem with your request.",
-      });
+  const handleFormSubmit = (values: House) => {
+    if (!firestore) return;
+    
+    if (editingHouse) {
+      const houseRef = doc(firestore, 'houses', editingHouse.id);
+      updateDocumentNonBlocking(houseRef, values);
+      toast({ title: "House update request sent." });
+    } else {
+      addDocumentNonBlocking(collection(firestore, 'houses'), values);
+      toast({ title: "Add house request sent." });
     }
+    handleFormClose();
   };
 
-  const handleDeleteHouse = async (houseId: string) => {
+  const handleDeleteHouse = (houseId: string) => {
+    if (!firestore) return;
     if (window.confirm("Are you sure you want to delete this house?")) {
-      try {
-        const houseRef = doc(firestore, 'houses', houseId);
-        deleteDocumentNonBlocking(houseRef);
-        toast({ title: "House deleted successfully!" });
-        handleDeselectHouse();
-      } catch (error) {
-        console.error("Error deleting house: ", error);
-        toast({
-          variant: "destructive",
-          title: "Uh oh! Something went wrong.",
-          description: "Could not delete the house.",
-        });
-      }
+      const houseRef = doc(firestore, 'houses', houseId);
+      deleteDocumentNonBlocking(houseRef);
+      toast({ title: "Delete house request sent." });
+      handleDeselectHouse();
     }
   };
 
