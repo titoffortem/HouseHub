@@ -20,24 +20,48 @@ if (typeof window !== 'undefined') {
 
 interface MapComponentProps {
   houses: HouseWithId[];
+  highlightedHouses: HouseWithId[] | null;
   onSelectHouse: (house: HouseWithId) => void;
 }
 
+const defaultStyle = {
+  color: "hsl(var(--primary))",
+  weight: 1.5,
+  opacity: 0.8,
+  fillColor: "hsl(var(--primary))",
+  fillOpacity: 0.2,
+};
+
+const highlightedStyle = {
+  color: "#FFFFFF",
+  weight: 2,
+  opacity: 1,
+  fillColor: "#FFFFFF",
+  fillOpacity: 0.3,
+};
+
 export default function MapComponent({
   houses,
+  highlightedHouses,
   onSelectHouse,
 }: MapComponentProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const layersRef = useRef<L.LayerGroup | null>(null);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 20
-      }).addTo(mapInstance.current);
+       L.tileLayer(
+        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+          subdomains: 'abcd',
+          maxZoom: 20,
+        }
+      ).addTo(mapInstance.current);
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
     }
 
@@ -51,41 +75,41 @@ export default function MapComponent({
 
   useEffect(() => {
     const layers = layersRef.current;
-    if (!layers) return;
+    if (!layers || !mapInstance.current) return;
 
     layers.clearLayers();
 
     const allBounds: L.LatLng[] = [];
+    const highlightedIds = highlightedHouses ? new Set(highlightedHouses.map(h => h.id)) : null;
 
     houses.forEach(house => {
         let layer: L.Layer | null = null;
+        const isHighlighted = highlightedHouses === null || (highlightedIds && highlightedIds.has(house.id));
         
+        const style = isHighlighted ? highlightedStyle : defaultStyle;
+
         const { coordinates } = house;
 
         if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
             const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
-            layer = L.polygon(latLngs, {
-                color: "hsl(var(--primary))",
-                weight: 1.5,
-                opacity: 0.8,
-                fillColor: "hsl(var(--primary))",
-                fillOpacity: 0.2
-            });
-            latLngs.forEach(coord => {
-              allBounds.push(L.latLng(coord[0], coord[1]))
-            });
+            layer = L.polygon(latLngs, style);
+            if (isHighlighted) {
+              latLngs.forEach(coord => allBounds.push(L.latLng(coord[0], coord[1])));
+            }
         } else if (coordinates.type === 'Point' && coordinates.points.length > 0) {
             const point = coordinates.points[0];
             const latLng = [point.lat, point.lng] as [number, number];
             layer = L.circleMarker(latLng, {
-                radius: 6, // Fixed radius in pixels
-                fillColor: "hsl(var(--primary))",
-                color: "#FFF",
-                weight: 1.5,
-                opacity: 1,
-                fillOpacity: 0.8
+                radius: 6,
+                fillColor: style.fillColor,
+                color: style.color === 'hsl(var(--primary))' ? "#FFF" : style.color,
+                weight: style.weight,
+                opacity: style.opacity,
+                fillOpacity: style.fillOpacity
             });
-            allBounds.push(L.latLng(point.lat, point.lng));
+            if (isHighlighted) {
+              allBounds.push(L.latLng(point.lat, point.lng));
+            }
         }
       
       if (layer) {
@@ -98,13 +122,26 @@ export default function MapComponent({
 
     if (allBounds.length > 0 && mapInstance.current) {
         const bounds = new L.LatLngBounds(allBounds);
-        // Check if bounds are valid to prevent errors
+        if (bounds.isValid()) {
+            mapInstance.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+        }
+    } else if (isInitialLoad.current && houses.length > 0 && mapInstance.current) {
+        // On initial load, fit all houses if no specific filter is active
+        const allHousesBounds: L.LatLng[] = [];
+        houses.forEach(house => {
+            house.coordinates.points.forEach(p => {
+                allHousesBounds.push(L.latLng(p.lat, p.lng));
+            });
+        });
+        const bounds = new L.LatLngBounds(allHousesBounds);
         if (bounds.isValid()) {
             mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
         }
+        isInitialLoad.current = false;
     }
 
-  }, [houses, onSelectHouse]);
+
+  }, [houses, highlightedHouses, onSelectHouse]);
   
   return <div ref={mapRef} className="h-full w-full z-0" />;
 }

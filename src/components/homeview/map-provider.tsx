@@ -15,5 +15,6 @@ export default function Map(props: any) {
     setIsClient(true);
   }, []);
 
+  // Pass all props down to MapComponent
   return isClient ? <MapComponent {...props} /> : <div className="h-full w-full bg-muted animate-pulse" />;
 }

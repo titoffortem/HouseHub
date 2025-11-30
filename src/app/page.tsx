@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 export default function Home() {
-  const [filteredHouses, setFilteredHouses] = React.useState<HouseWithId[]>([]);
+  const [filteredHouses, setFilteredHouses] = React.useState<HouseWithId[] | null>(null);
   const [selectedHouse, setSelectedHouse] = React.useState<HouseWithId | null>(null);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingHouse, setEditingHouse] = React.useState<HouseWithId | null>(null);
@@ -27,20 +27,17 @@ export default function Home() {
   const housesCollection = useMemoFirebase(() => firestore ? collection(firestore, "houses"): null, [firestore]);
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
 
-  React.useEffect(() => {
-    if (allHouses) {
-      setFilteredHouses(allHouses);
-    }
-  }, [allHouses]);
-
   const handleSearch = (searchTerm: string, filters: { rooms: number | null; minPrice: number; maxPrice: number }) => {
-    let results = allHouses || [];
+    if (!allHouses) return;
 
-    if (searchTerm) {
-      results = results.filter((house) =>
-        house.address.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    if (!searchTerm) {
+      setFilteredHouses(null); // Reset filter, null means all are shown normally
+      return;
     }
+
+    const results = allHouses.filter((house) =>
+      house.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     setFilteredHouses(results);
   };
@@ -178,7 +175,11 @@ export default function Home() {
         {isLoading ? (
           <div className="flex items-center justify-center h-full">Загрузка домов...</div>
         ) : (
-          <Map houses={filteredHouses} onSelectHouse={handleSelectHouse} />
+          <Map
+            houses={allHouses || []}
+            highlightedHouses={filteredHouses}
+            onSelectHouse={handleSelectHouse}
+          />
         )}
         <PropertyDetails
           house={selectedHouse}
