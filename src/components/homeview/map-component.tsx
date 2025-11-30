@@ -34,7 +34,7 @@ export default function MapComponent({
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
       }).addTo(mapInstance.current);
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
@@ -78,7 +78,7 @@ export default function MapComponent({
             layer = L.circleMarker(latLng, {
                 radius: 6, // Fixed radius in pixels
                 fillColor: "hsl(231 48% 48%)",
-                color: "#000",
+                color: "#FFF",
                 weight: 1,
                 opacity: 1,
                 fillOpacity: 0.8
