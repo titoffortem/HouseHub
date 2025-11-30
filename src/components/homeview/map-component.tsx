@@ -17,24 +17,19 @@ if (typeof window !== 'undefined') {
   });
 }
 
-interface MapComponentProps {
-  houses: HouseWithId[];
-  onSelectHouse: (house: HouseWithId) => void;
-}
-
-const defaultCircleStyle = {
+const getBaseStyle = (radius = 20) => ({
   color: 'hsl(231 48% 48%)',
   fillColor: 'hsl(231 48% 48%)',
   fillOpacity: 0.2,
-  radius: 20,
+  radius: radius,
   weight: 2,
-};
+});
 
-const hoverCircleStyle = {
-  ...defaultCircleStyle,
+const getHoverStyle = (radius = 20) => ({
+  ...getBaseStyle(radius),
   fillOpacity: 0.6,
-  radius: 25,
-};
+  radius: radius * 1.25, // Slightly increase radius on hover
+});
 
 
 export default function MapComponent({
@@ -73,6 +68,13 @@ export default function MapComponent({
 
     // Add new circles for each house
     houses.forEach(house => {
+        // Calculate radius based on house size. Using sqrt to make the difference less extreme.
+        // The multiplier is for visual scaling. Adjust as needed.
+        const baseRadius = Math.max(10, Math.sqrt(house.size) * 1.5);
+        
+        const defaultCircleStyle = getBaseStyle(baseRadius);
+        const hoverCircleStyle = getHoverStyle(baseRadius);
+
         const circle = L.circle(house.coordinates, defaultCircleStyle);
 
         circle.on('mouseover', function (e) {
