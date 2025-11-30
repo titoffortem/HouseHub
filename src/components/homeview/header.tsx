@@ -1,4 +1,4 @@
-import { Home, LogIn, LogOut } from "lucide-react";
+import { LogIn, LogOut } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { Button } from "../ui/button";
 import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import Image from "next/image";
 
 export function Header() {
   const { user, isUserLoading } = useUser();
@@ -36,10 +37,7 @@ export function Header() {
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6 sticky top-0 z-20">
       <div className="flex items-center gap-2">
-        <Home className="h-6 w-6 text-primary" />
-        <h1 className="text-xl font-bold font-headline text-foreground">
-          HomeView
-        </h1>
+        <Image src="/logo.png" alt="House Hub Logo" width={120} height={40} />
       </div>
       <div>
         {isUserLoading ? (
