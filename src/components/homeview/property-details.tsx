@@ -10,24 +10,24 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import type { HouseWithId } from "@/lib/types";
 import {
-  BedDouble,
   Building,
   Calendar,
   Check,
   ChevronsUpDown,
-  Home,
   Layers3,
-  MapPin,
-  Ruler,
   Trash2 as TrashIcon,
-  Wallet,
-  Warehouse,
-  Droplets,
   X,
   Pencil,
 } from "lucide-react";
 import { FloorPlan } from "./floor-plan";
 import { Button } from "../ui/button";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { useState } from "react";
 
 interface PropertyDetailsProps {
   house: HouseWithId | null;
@@ -85,6 +85,24 @@ export function PropertyDetails({
   onDelete,
 }: PropertyDetailsProps) {
   if (!house) return null;
+  const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
+
+  const getFloorPlanUrl = (floor: number) => {
+    // Attempt to create a unique URL per floor by modifying the seed
+    try {
+      const url = new URL(house.floorPlanUrl);
+      const parts = url.pathname.split('/');
+      if (parts.length >= 3 && parts[1] === 'seed') {
+        const seed = parts[2];
+        parts[2] = `${seed}-floor-${floor}`;
+        url.pathname = parts.join('/');
+        return url.toString();
+      }
+    } catch (e) {
+      // Fallback if URL is not standard
+    }
+    return house.floorPlanUrl;
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -102,17 +120,6 @@ export function PropertyDetails({
                   })}
               </SheetDescription>
             </SheetHeader>
-
-            <div className="mt-6">
-              <h3 className="text-lg font-headline font-semibold">
-                Floor Plan
-              </h3>
-              <FloorPlan
-                src={house.floorPlanUrl}
-                alt={`Floor plan for ${house.address}`}
-                hint={house.floorPlanHint}
-              />
-            </div>
           </div>
           <Separator />
           <div className="p-6">
@@ -148,6 +155,35 @@ export function PropertyDetails({
                 />
               </div>
             </div>
+
+            <Accordion type="single" collapsible className="w-full mt-6">
+              <AccordionItem value="item-1">
+                <AccordionTrigger>Посмотреть планировки</AccordionTrigger>
+                <AccordionContent>
+                  <div className="flex flex-col gap-2">
+                    {Array.from({ length: house.floors }, (_, i) => i + 1).map(
+                      (floor) => (
+                        <Button
+                          key={floor}
+                          variant={selectedFloor === floor ? "secondary" : "ghost"}
+                          onClick={() => setSelectedFloor(floor)}
+                          className="justify-start"
+                        >
+                          Этаж {floor}
+                        </Button>
+                      )
+                    )}
+                  </div>
+                  {selectedFloor && (
+                     <FloorPlan
+                        src={getFloorPlanUrl(selectedFloor)}
+                        alt={`Floor plan for ${house.address}, floor ${selectedFloor}`}
+                        hint={`${house.floorPlanHint} floor ${selectedFloor}`}
+                      />
+                  )}
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         </ScrollArea>
         {isAdmin && (
