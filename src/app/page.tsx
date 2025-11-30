@@ -137,13 +137,32 @@ export default function Home() {
     }
   };
 
-  const handleDeleteHouse = (houseId: string) => {
-    if (!firestore || !user) return;
+  const handleDeleteHouse = async (houseId: string) => {
+    if (!firestore || !user) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to delete a house.",
+      });
+      return;
+    }
     if (window.confirm("Are you sure you want to delete this house?")) {
       const houseRef = doc(firestore, 'houses', houseId);
-      deleteDocumentNonBlocking(houseRef);
-      toast({ title: "Delete house request sent." });
-      handleDeselectHouse();
+      try {
+        await deleteDocumentNonBlocking(houseRef);
+        toast({
+          title: "Success",
+          description: "House deleted successfully.",
+        });
+        handleDeselectHouse();
+      } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Deletion Failed",
+          description: error.message || "An unknown error occurred.",
+        });
+        console.error("Deletion failed:", error);
+      }
     }
   };
 
