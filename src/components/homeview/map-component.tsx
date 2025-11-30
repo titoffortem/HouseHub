@@ -4,7 +4,7 @@
 import React, { useEffect, useRef } from 'react';
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import type { HouseWithId, GeoPoint } from "@/lib/types";
+import type { HouseWithId } from "@/lib/types";
 
 // Fix for default icon path issue with webpack
 if (typeof window !== 'undefined') {
@@ -33,11 +33,11 @@ const defaultStyle = {
 };
 
 const highlightedStyle = {
-  color: "#FFFFFF",
-  weight: 2,
+  color: "hsl(var(--accent))",
+  weight: 3,
   opacity: 1,
-  fillColor: "#FFFFFF",
-  fillOpacity: 0.3,
+  fillColor: "hsl(var(--accent))",
+  fillOpacity: 0.4,
 };
 
 export default function MapComponent({
@@ -80,14 +80,8 @@ export default function MapComponent({
     houses.forEach(house => {
         let layer: L.Layer | null = null;
         const isHighlighted = highlightedIds ? highlightedIds.has(house.id) : false;
-        const isFiltered = highlightedHouses !== null; // Is a search active?
-
-        // If a search is active, non-highlighted houses get a muted style
-        const baseStyle = (isFiltered && !isHighlighted) 
-          ? { ...defaultStyle, color: '#888', fillColor: '#888', opacity: 0.5, fillOpacity: 0.1 } 
-          : defaultStyle;
         
-        const style = isHighlighted ? highlightedStyle : baseStyle;
+        const style = isHighlighted ? highlightedStyle : defaultStyle;
 
         const { coordinates } = house;
 
@@ -100,7 +94,7 @@ export default function MapComponent({
             layer = L.circleMarker(latLng, {
                 radius: 6,
                 fillColor: style.fillColor,
-                color: style.color === 'hsl(var(--primary))' ? "#FFF" : style.color,
+                color: style.color,
                 weight: style.weight,
                 opacity: style.opacity,
                 fillOpacity: style.fillOpacity
