@@ -57,17 +57,3 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
             errorEmitter.emit('permission-error', permissionError);
         });
 }
-
-/**
- * Initiates a deleteDoc operation. Catches permission errors and emits them globally.
- */
-export function deleteDocumentNonBlocking(docRef: DocumentReference) {
-  deleteDoc(docRef)
-    .catch(error => {
-      const permissionError = new FirestorePermissionError({
-        path: docRef.path,
-        operation: 'delete',
-      });
-      errorEmitter.emit('permission-error', permissionError);
-    });
-}

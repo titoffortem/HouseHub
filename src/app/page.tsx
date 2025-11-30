@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
-import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export default function Home() {
@@ -137,29 +136,6 @@ export default function Home() {
     }
   };
 
-  const handleDeleteHouse = (houseId: string) => {
-    if (!firestore) {
-      toast({ variant: "destructive", title: "Firestore not available" });
-      return;
-    }
-
-    if (!window.confirm("Вы уверены, что хотите удалить этот дом?")) {
-      return;
-    }
-
-    const houseRef = doc(firestore, 'houses', houseId);
-    
-    // Use the non-blocking function. The catch block inside it will handle permission errors.
-    deleteDocumentNonBlocking(houseRef);
-    
-    handleDeselectHouse(); 
-    toast({
-      title: "Успех",
-      description: "Запрос на удаление дома отправлен.",
-    });
-  };
-
-
   return (
     <div className="relative min-h-screen w-full bg-background">
       <Header />
@@ -176,7 +152,6 @@ export default function Home() {
           onOpenChange={handleDeselectHouse}
           isAdmin={!!user}
           onEdit={handleOpenForm}
-          onDelete={handleDeleteHouse}
         />
         {user && (
           <div className="absolute bottom-4 right-4 z-10">
