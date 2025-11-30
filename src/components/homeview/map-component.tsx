@@ -58,13 +58,20 @@ export default function MapComponent({
 
     // Add new markers for each house
     houses.forEach(house => {
-      const marker = L.marker(house.coordinates);
+      const circleMarker = L.circleMarker(house.coordinates, {
+        radius: 8,
+        fillColor: "hsl(231 48% 48%)", // primary color
+        color: "#000",
+        weight: 1,
+        opacity: 1,
+        fillOpacity: 0.8
+      });
       
-      marker.on('click', () => {
+      circleMarker.on('click', () => {
           onSelectHouse(house);
       });
 
-      layers.addLayer(marker);
+      layers.addLayer(circleMarker);
     });
 
     // Fit bounds if houses are available
