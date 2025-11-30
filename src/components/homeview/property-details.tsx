@@ -1,3 +1,4 @@
+
 import {
   Sheet,
   SheetContent,
@@ -17,6 +18,7 @@ import {
   Trash2 as TrashIcon,
   X,
   Pencil,
+  Check,
 } from "lucide-react";
 import { FloorPlan } from "./floor-plan";
 import { Button } from "../ui/button";
@@ -24,6 +26,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
@@ -132,12 +135,6 @@ export function PropertyDetails({
               <SheetTitle className="font-headline text-2xl">
                 {house.address}
               </SheetTitle>
-              <SheetDescription className="flex items-center gap-2 text-lg">
-                {house.price.toLocaleString("en-US", {
-                    style: "currency",
-                    currency: "USD",
-                  })}
-              </SheetDescription>
             </SheetHeader>
           </div>
           <Separator />
