@@ -67,7 +67,7 @@ export default function MapComponent({
                 color: "#FFFFFF",
                 weight: 1,
                 opacity: 0.7,
-                fillColor: "hsl(var(--primary))",
+                fillColor: "#FFFFFF",
                 fillOpacity: 0.3
             });
             latLngs.forEach(coord => {
