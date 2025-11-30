@@ -8,7 +8,7 @@ import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, addDoc, updateDoc, deleteDoc, FirestoreError } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
@@ -112,10 +112,10 @@ export default function Home() {
 
         if (editingHouse) {
           const houseRef = doc(firestore, 'houses', editingHouse.id);
-          await updateDoc(houseRef, houseData);
+          await updateDoc(houseRef, houseData as any);
           toast({ title: "House updated successfully" });
         } else {
-          await addDoc(collection(firestore, 'houses'), houseData);
+           await addDoc(collection(firestore, 'houses'), houseData);
           toast({ title: "House added successfully" });
         }
         handleFormClose();
@@ -127,22 +127,18 @@ export default function Home() {
         });
       }
     } catch (error: any) {
-      console.error("Geocoding or Firestore error:", error);
+      console.error("Firestore error:", error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: error.message || "An error occurred while saving the house.",
+        title: "Error saving house",
+        description: error.message || "An error occurred. Check your permissions.",
       });
     }
   };
 
   const handleDeleteHouse = async (houseId: string) => {
     if (!firestore) {
-      toast({
-        variant: "destructive",
-        title: "Firestore not available",
-        description: "Please try again later.",
-      });
+      toast({ variant: "destructive", title: "Firestore not available" });
       return;
     }
 
@@ -158,12 +154,13 @@ export default function Home() {
         title: "Успех",
         description: "Дом успешно удален.",
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error deleting house:", error);
+      const firebaseError = error as FirestoreError;
       toast({
         variant: "destructive",
         title: "Ошибка при удалении",
-        description: error.message || "Не удалось удалить дом. Проверьте свои права доступа.",
+        description: firebaseError.message || "Не удалось удалить дом. Проверьте свои права доступа.",
       });
     }
   };
