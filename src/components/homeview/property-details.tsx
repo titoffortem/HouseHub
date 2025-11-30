@@ -4,7 +4,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -22,14 +21,9 @@ import {
 } from "lucide-react";
 import { FloorPlan } from "./floor-plan";
 import { Button } from "../ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { useState, useEffect } from "react";
+import { FloorPlanViewer } from "./floor-plan-viewer";
+
 
 interface PropertyDetailsProps {
   house: HouseWithId | null;
@@ -86,138 +80,109 @@ export function PropertyDetails({
   onEdit,
   onDelete,
 }: PropertyDetailsProps) {
-  const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   useEffect(() => {
-    // Reset floor selection when a new house is selected or sheet is closed
-    if (!open || !house) {
-      setSelectedFloor(null);
+    // Close the viewer if the main sheet is closed
+    if (!open) {
+      setIsViewerOpen(false);
     }
-  }, [open, house]);
+  }, [open]);
 
   if (!house) return null;
 
-  const getFloorPlanUrl = (floor: number) => {
-    try {
-      const url = new URL(house.floorPlanUrl);
-      const parts = url.pathname.split('/');
-      if (parts.length >= 3 && parts[1] === 'seed') {
-        const seed = parts[2];
-        parts[2] = `${seed}-floor-${floor}`;
-        url.pathname = parts.join('/');
-        return url.toString();
-      }
-    } catch (e) {
-      // Fallback
-    }
-    return house.floorPlanUrl;
-  };
-
-  const currentImageUrl = selectedFloor ? getFloorPlanUrl(selectedFloor) : house.floorPlanUrl;
-  const currentImageAlt = selectedFloor
-    ? `Floor plan for ${house.address}, floor ${selectedFloor}`
-    : `Photo of ${house.address}`;
-  const currentImageHint = selectedFloor
-    ? `${house.floorPlanHint} floor ${selectedFloor}`
-    : `photo ${house.floorPlanHint}`;
-
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col" side="left">
-        <ScrollArea className="flex-grow">
-          <FloorPlan
-            src={currentImageUrl}
-            alt={currentImageAlt}
-            hint={currentImageHint}
-          />
-          <div className="p-6">
-            <SheetHeader>
-              <SheetTitle className="font-headline text-2xl">
-                {house.address}
-              </SheetTitle>
-            </SheetHeader>
-          </div>
-          <Separator />
-          <div className="p-6">
-            <h3 className="text-lg font-headline font-semibold mb-4">
-              Property Details
-            </h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-              <DetailItem
-                icon={<Calendar className="h-5 w-5" />}
-                label="Year Built"
-                value={house.year}
-              />
-              <DetailItem
-                icon={<Building className="h-5 w-5" />}
-                label="Building Series"
-                value={house.buildingSeries}
-              />
-              <div className="flex items-center justify-between col-span-2">
-                 <DetailItem
-                  icon={<ChevronsUpDown className="h-5 w-5" />}
-                  label="Floors"
-                  value={house.floors}
+    <>
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col" side="left">
+          <ScrollArea className="flex-grow">
+            <FloorPlan
+              src={house.floorPlanUrl}
+              alt={`Photo of ${house.address}`}
+              hint={`photo ${house.floorPlanHint}`}
+            />
+            <div className="p-6">
+              <SheetHeader>
+                <SheetTitle className="font-headline text-2xl">
+                  {house.address}
+                </SheetTitle>
+              </SheetHeader>
+            </div>
+            <Separator />
+            <div className="p-6">
+              <h3 className="text-lg font-headline font-semibold mb-4">
+                Property Details
+              </h3>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+                <DetailItem
+                  icon={<Calendar className="h-5 w-5" />}
+                  label="Year Built"
+                  value={house.year}
                 />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">Посмотреть планировки</Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    {Array.from({ length: house.floors }, (_, i) => i + 1).map(
-                      (floor) => (
-                        <DropdownMenuItem key={floor} onSelect={() => setSelectedFloor(floor)}>
-                          Этаж {floor}
-                        </DropdownMenuItem>
-                      )
-                    )}
-                     <DropdownMenuSeparator />
-                     <DropdownMenuItem onSelect={() => setSelectedFloor(null)}>
-                        Показать фото дома
-                      </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+                <DetailItem
+                  icon={<Building className="h-5 w-5" />}
+                  label="Building Series"
+                  value={house.buildingSeries}
+                />
+                <div className="flex items-center justify-between col-span-2">
+                   <DetailItem
+                    icon={<ChevronsUpDown className="h-5 w-5" />}
+                    label="Floors"
+                    value={house.floors}
+                  />
+                  <Button variant="outline" size="sm" onClick={() => setIsViewerOpen(true)}>
+                    Посмотреть планировки
+                  </Button>
+                </div>
 
-              <div className="col-span-2 grid grid-cols-2 gap-4">
-                <BooleanItem
-                  icon={<Layers3 className="h-5 w-5" />}
-                  label="Elevator"
-                  value={house.hasElevator}
-                />
-                <BooleanItem
-                  icon={<TrashIcon className="h-5 w-5" />}
-                  label="Garbage Chute"
-                  value={house.hasGarbageChute}
-                />
+                <div className="col-span-2 grid grid-cols-2 gap-4">
+                  <BooleanItem
+                    icon={<Layers3 className="h-5 w-5" />}
+                    label="Elevator"
+                    value={house.hasElevator}
+                  />
+                  <BooleanItem
+                    icon={<TrashIcon className="h-5 w-5" />}
+                    label="Garbage Chute"
+                    value={house.hasGarbageChute}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-        </ScrollArea>
-        {isAdmin && (
-          <>
-            <Separator />
-            <SheetFooter className="p-4 flex-shrink-0">
-              <div className="flex w-full gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => onEdit(house)}
-                >
-                  <Pencil className="mr-2 h-4 w-4" /> Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1"
-                  onClick={() => onDelete(house.id)}
-                >
-                  <TrashIcon className="mr-2 h-4 w-4" /> Delete
-                </Button>
-              </div>
-            </SheetFooter>
-          </>
-        )}
-      </SheetContent>
-    </Sheet>
+          </ScrollArea>
+          {isAdmin && (
+            <>
+              <Separator />
+              <SheetFooter className="p-4 flex-shrink-0">
+                <div className="flex w-full gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => onEdit(house)}
+                  >
+                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => onDelete(house.id)}
+                  >
+                    <TrashIcon className="mr-2 h-4 w-4" /> Delete
+                  </Button>
+                </div>
+              </SheetFooter>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+      {house && (
+        <FloorPlanViewer
+          house={house}
+          open={isViewerOpen}
+          onOpenChange={setIsViewerOpen}
+        />
+      )}
+    </>
   );
 }
+
