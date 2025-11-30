@@ -31,7 +31,6 @@ const formSchema = z.object({
   buildingSeries: z.string().min(1, "Building series is required"),
   floors: z.coerce.number().int().positive("Must be a positive number"),
   imageUrl: z.string().url("Must be a valid URL"),
-  imageHint: z.string().min(1, "Image hint is required"),
   floorPlans: z.array(floorPlanSchema).min(1, "At least one floor plan is required"),
 });
 
@@ -80,7 +79,6 @@ export function PropertyForm({
             buildingSeries: "",
             floors: 1,
             imageUrl: "",
-            imageHint: "modern building",
             floorPlans: [
               { url: "" },
             ],
@@ -140,11 +138,6 @@ export function PropertyForm({
                 <Label htmlFor="imageUrl">House Image URL</Label>
                 <Input id="imageUrl" {...register("imageUrl")} />
                 {errors.imageUrl && <p className="text-destructive text-sm">{errors.imageUrl.message}</p>}
-            </div>
-             <div className="space-y-1">
-                <Label htmlFor="imageHint">House Image Hint</Label>
-                <Input id="imageHint" {...register("imageHint")} />
-                {errors.imageHint && <p className="text-destructive text-sm">{errors.imageHint.message}</p>}
             </div>
             
             <Separator />

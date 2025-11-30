@@ -68,10 +68,6 @@
           "description": "URL of the image representing the house.",
           "format": "uri"
         },
-        "imageHint": {
-          "type": "string",
-          "description": "A hint for AI to generate a similar image for the house."
-        },
         "floorPlans": {
           "type": "array",
           "description": "An array of floor plans, one for each floor.",
@@ -85,7 +81,6 @@
         "buildingSeries",
         "floors",
         "imageUrl",
-        "imageHint",
         "floorPlans"
       ]
     },

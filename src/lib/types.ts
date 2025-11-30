@@ -20,7 +20,6 @@ export type House = {
   buildingSeries: string;
   floors: number;
   imageUrl: string;
-  imageHint: string;
   floorPlans: FloorPlan[];
 };
 
