@@ -45,8 +45,7 @@ export function Header({ onSearch }: HeaderProps) {
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6 sticky top-0 z-20">
       <div className="flex items-center gap-2">
-        <Image src="https://sun9-20.userapi.com/s/v1/ig2/uIdtH8WL93WBwVCjfTiSSkbYOzSbkBJsjhGAEtVCLKCqghZhVWGJHZb1uDrCDEfXHVPdJCfaqZOcpDG4S_Yrt4LD.jpg?quality=95&as=32x32,48x48,72x72,108x108,160x160,240x240,308x308&from=bu&cs=308x0" alt="Логотип HouseHub" width={40} height={40} className="rounded-md" />
-        <span className="font-headline text-xl font-bold">HouseHub</span>
+        <Image src="https://sun9-56.userapi.com/s/v1/ig2/vNf1-KzT6i2fJ0C_gZ0L_cK_q6uBwX_aANFh-T6uFm3wGnyoYm78AZsX5LFFo3S0i9iB0g9hHj5Kq3jA-3d92z8H.jpg?quality=95&as=32x32,48x48,72x72,108x108,160x160,240x240,360x360&from=bu&cs=360x0" alt="Логотип HouseHub" width={120} height={30} className="rounded-md" />
       </div>
       <div className="flex-1 flex justify-center px-8">
         <PropertySearch onSearch={onSearch} />
