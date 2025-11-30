@@ -8,12 +8,11 @@ import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export default function Home() {
@@ -26,7 +25,7 @@ export default function Home() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const housesCollection = useMemoFirebase(() => collection(firestore, "houses"), [firestore]);
+  const housesCollection = useMemoFirebase(() => firestore ? collection(firestore, "houses"): null, [firestore]);
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
 
   React.useEffect(() => {
@@ -65,7 +64,7 @@ export default function Home() {
     setEditingHouse(null);
   };
 
- const handleFormSubmit = async (values: Omit<House, 'coordinates'>) => {
+ const handleFormSubmit = async (values: Omit<House, 'coordinates' | 'floorPlanHint'>) => {
     if (!firestore || !user) return;
 
     try {
@@ -109,15 +108,16 @@ export default function Home() {
         const houseData: House = {
           ...values,
           coordinates: coordinates,
+          floorPlanHint: "floor plan",
         };
 
         if (editingHouse) {
           const houseRef = doc(firestore, 'houses', editingHouse.id);
-          updateDocumentNonBlocking(houseRef, houseData);
-          toast({ title: "House update request sent." });
+          await updateDoc(houseRef, houseData);
+          toast({ title: "House updated successfully" });
         } else {
-          addDocumentNonBlocking(collection(firestore, 'houses'), houseData);
-          toast({ title: "Add house request sent." });
+          await addDoc(collection(firestore, 'houses'), houseData);
+          toast({ title: "House added successfully" });
         }
         handleFormClose();
       } else {
@@ -127,12 +127,44 @@ export default function Home() {
           description: "Could not find coordinates for the provided address.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Geocoding or Firestore error:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An error occurred while saving the house. The address might be invalid.",
+        description: error.message || "An error occurred while saving the house.",
+      });
+    }
+  };
+
+  const handleDeleteHouse = async (houseId: string) => {
+    if (!firestore || !user) {
+      toast({
+        variant: "destructive",
+        title: "Not authenticated",
+        description: "You must be logged in to delete a house.",
+      });
+      return;
+    }
+
+    if (!window.confirm("Вы уверены, что хотите удалить этот дом?")) {
+      return;
+    }
+
+    const houseRef = doc(firestore, 'houses', houseId);
+    try {
+      await deleteDoc(houseRef);
+      handleDeselectHouse(); // Close the details panel
+      toast({
+        title: "Успех",
+        description: "Дом успешно удален.",
+      });
+    } catch (error: any) {
+      console.error("Error deleting house:", error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка при удалении",
+        description: error.message || "Не удалось удалить дом. Проверьте свои права доступа.",
       });
     }
   };
@@ -154,6 +186,7 @@ export default function Home() {
           onOpenChange={handleDeselectHouse}
           isAdmin={!!user}
           onEdit={handleOpenForm}
+          onDelete={handleDeleteHouse}
         />
         {user && (
           <div className="absolute bottom-4 right-4 z-10">
