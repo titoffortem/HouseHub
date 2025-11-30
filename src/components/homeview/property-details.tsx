@@ -12,7 +12,6 @@ import type { HouseWithId } from "@/lib/types";
 import {
   Building,
   Calendar,
-  Check,
   ChevronsUpDown,
   Layers3,
   Trash2 as TrashIcon,
@@ -22,12 +21,12 @@ import {
 import { FloorPlan } from "./floor-plan";
 import { Button } from "../ui/button";
 import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { useState } from "react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState, useEffect } from "react";
 
 interface PropertyDetailsProps {
   house: HouseWithId | null;
@@ -84,11 +83,18 @@ export function PropertyDetails({
   onEdit,
   onDelete,
 }: PropertyDetailsProps) {
-  if (!house) return null;
   const [selectedFloor, setSelectedFloor] = useState<number | null>(null);
 
+  useEffect(() => {
+    // Reset floor selection when a new house is selected or sheet is closed
+    if (!open || !house) {
+      setSelectedFloor(null);
+    }
+  }, [open, house]);
+
+  if (!house) return null;
+
   const getFloorPlanUrl = (floor: number) => {
-    // Attempt to create a unique URL per floor by modifying the seed
     try {
       const url = new URL(house.floorPlanUrl);
       const parts = url.pathname.split('/');
@@ -99,15 +105,28 @@ export function PropertyDetails({
         return url.toString();
       }
     } catch (e) {
-      // Fallback if URL is not standard
+      // Fallback
     }
     return house.floorPlanUrl;
   };
+
+  const currentImageUrl = selectedFloor ? getFloorPlanUrl(selectedFloor) : house.floorPlanUrl;
+  const currentImageAlt = selectedFloor
+    ? `Floor plan for ${house.address}, floor ${selectedFloor}`
+    : `Photo of ${house.address}`;
+  const currentImageHint = selectedFloor
+    ? `${house.floorPlanHint} floor ${selectedFloor}`
+    : `photo ${house.floorPlanHint}`;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col" side="left">
         <ScrollArea className="flex-grow">
+          <FloorPlan
+            src={currentImageUrl}
+            alt={currentImageAlt}
+            hint={currentImageHint}
+          />
           <div className="p-6">
             <SheetHeader>
               <SheetTitle className="font-headline text-2xl">
@@ -137,11 +156,32 @@ export function PropertyDetails({
                 label="Building Series"
                 value={house.buildingSeries}
               />
-              <DetailItem
-                icon={<ChevronsUpDown className="h-5 w-5" />}
-                label="Floors"
-                value={house.floors}
-              />
+              <div className="flex items-center justify-between col-span-2">
+                 <DetailItem
+                  icon={<ChevronsUpDown className="h-5 w-5" />}
+                  label="Floors"
+                  value={house.floors}
+                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">Посмотреть планировки</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    {Array.from({ length: house.floors }, (_, i) => i + 1).map(
+                      (floor) => (
+                        <DropdownMenuItem key={floor} onSelect={() => setSelectedFloor(floor)}>
+                          Этаж {floor}
+                        </DropdownMenuItem>
+                      )
+                    )}
+                     <DropdownMenuSeparator />
+                     <DropdownMenuItem onSelect={() => setSelectedFloor(null)}>
+                        Показать фото дома
+                      </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
               <div className="col-span-2 grid grid-cols-2 gap-4">
                 <BooleanItem
                   icon={<Layers3 className="h-5 w-5" />}
@@ -155,35 +195,6 @@ export function PropertyDetails({
                 />
               </div>
             </div>
-
-            <Accordion type="single" collapsible className="w-full mt-6">
-              <AccordionItem value="item-1">
-                <AccordionTrigger>Посмотреть планировки</AccordionTrigger>
-                <AccordionContent>
-                  <div className="flex flex-col gap-2">
-                    {Array.from({ length: house.floors }, (_, i) => i + 1).map(
-                      (floor) => (
-                        <Button
-                          key={floor}
-                          variant={selectedFloor === floor ? "secondary" : "ghost"}
-                          onClick={() => setSelectedFloor(floor)}
-                          className="justify-start"
-                        >
-                          Этаж {floor}
-                        </Button>
-                      )
-                    )}
-                  </div>
-                  {selectedFloor && (
-                     <FloorPlan
-                        src={getFloorPlanUrl(selectedFloor)}
-                        alt={`Floor plan for ${house.address}, floor ${selectedFloor}`}
-                        hint={`${house.floorPlanHint} floor ${selectedFloor}`}
-                      />
-                  )}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
           </div>
         </ScrollArea>
         {isAdmin && (
