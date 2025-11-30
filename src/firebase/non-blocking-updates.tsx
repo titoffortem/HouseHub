@@ -1,5 +1,4 @@
 
-
 'use client';
     
 import {
@@ -12,11 +11,10 @@ import {
   SetOptions,
 } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
-import {FirestorePermissionError} from '@/firebase/errors';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 /**
- * Initiates a setDoc operation for a document reference.
- * Returns a promise that resolves on success or rejects with an error.
+ * Initiates a setDoc operation. Catches permission errors and emits them globally.
  */
 export function setDocumentNonBlocking(docRef: DocumentReference, data: any, options: SetOptions) {
   setDoc(docRef, data, options)
@@ -30,10 +28,8 @@ export function setDocumentNonBlocking(docRef: DocumentReference, data: any, opt
     });
 }
 
-
 /**
- * Initiates an addDoc operation for a collection reference.
- * Returns a promise that resolves on success or rejects with an error.
+ * Initiates an addDoc operation. Catches permission errors and emits them globally.
  */
 export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
     addDoc(colRef, data)
@@ -47,10 +43,8 @@ export function addDocumentNonBlocking(colRef: CollectionReference, data: any) {
         });
 }
 
-
 /**
- * Initiates an updateDoc operation for a document reference.
- * Returns a promise that resolves on success or rejects with an error.
+ * Initiates an updateDoc operation. Catches permission errors and emits them globally.
  */
 export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) {
     updateDoc(docRef, data)
@@ -64,18 +58,16 @@ export function updateDocumentNonBlocking(docRef: DocumentReference, data: any) 
         });
 }
 
-
 /**
- * Initiates a deleteDoc operation for a document reference.
+ * Initiates a deleteDoc operation. Catches permission errors and emits them globally.
  */
-export function deleteDocumentNonBlocking(docRef: DocumentReference): Promise<void> {
-  return deleteDoc(docRef).catch(error => {
+export function deleteDocumentNonBlocking(docRef: DocumentReference) {
+  deleteDoc(docRef)
+    .catch(error => {
       const permissionError = new FirestorePermissionError({
         path: docRef.path,
         operation: 'delete',
       });
       errorEmitter.emit('permission-error', permissionError);
-      // Re-throw the original error to allow the caller to handle it if needed
-      throw error;
     });
 }
