@@ -64,11 +64,11 @@ export default function MapComponent({
         if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
             const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
             layer = L.polygon(latLngs, {
-                color: "hsl(var(--primary))",
-                weight: 2,
-                opacity: 0.9,
+                color: "#FFFFFF",
+                weight: 1,
+                opacity: 0.7,
                 fillColor: "hsl(var(--primary))",
-                fillOpacity: 0.4
+                fillOpacity: 0.3
             });
             latLngs.forEach(coord => {
               allBounds.push(L.latLng(coord[0], coord[1]))
