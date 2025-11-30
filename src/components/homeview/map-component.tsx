@@ -24,7 +24,8 @@ interface MapComponentProps {
 }
 
 const isPolygon = (coords: any): coords is [number, number][] => {
-    return Array.isArray(coords) && Array.isArray(coords[0]) && Array.isArray(coords[0]);
+    // A valid polygon is an array of arrays, and the first inner array contains two numbers.
+    return Array.isArray(coords) && Array.isArray(coords[0]) && typeof coords[0][0] === 'number';
 }
 
 export default function MapComponent({
@@ -64,15 +65,21 @@ export default function MapComponent({
         let layer: L.Layer;
 
         if (isPolygon(house.coordinates)) {
-            layer = L.polygon(house.coordinates, {
+            const latLngs = house.coordinates as L.LatLngExpression[];
+            layer = L.polygon(latLngs, {
                 color: "hsl(231 48% 48%)", // primary
                 weight: 2,
                 opacity: 0.8,
                 fillOpacity: 0.2
             });
-            house.coordinates.forEach(coord => allBounds.push(L.latLng(coord[0], coord[1])));
+            latLngs.forEach(coord => {
+              if (Array.isArray(coord)) {
+                 allBounds.push(L.latLng(coord[0], coord[1]))
+              }
+            });
         } else {
-            layer = L.circleMarker(house.coordinates, {
+            const latLng = house.coordinates as L.LatLngExpression;
+            layer = L.circleMarker(latLng, {
                 radius: 8,
                 fillColor: "hsl(231 48% 48%)",
                 color: "#000",
@@ -80,7 +87,9 @@ export default function MapComponent({
                 opacity: 1,
                 fillOpacity: 0.8
             });
-            allBounds.push(L.latLng(house.coordinates[0], house.coordinates[1]));
+            if (Array.isArray(latLng)) {
+              allBounds.push(L.latLng(latLng[0], latLng[1]));
+            }
         }
       
       layer.on('click', () => {
