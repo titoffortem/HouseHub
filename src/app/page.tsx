@@ -6,13 +6,14 @@ import { Header } from "@/components/homeview/header";
 import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { OpenStreetMapProvider } from "leaflet-geosearch";
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<HouseWithId[]>([]);
@@ -73,18 +74,43 @@ export default function Home() {
     setEditingHouse(null);
   };
 
-  const handleFormSubmit = (values: House) => {
+  const handleFormSubmit = async (values: Omit<House, 'coordinates'>) => {
     if (!firestore) return;
-    
-    if (editingHouse) {
-      const houseRef = doc(firestore, 'houses', editingHouse.id);
-      updateDocumentNonBlocking(houseRef, values);
-      toast({ title: "House update request sent." });
-    } else {
-      addDocumentNonBlocking(collection(firestore, 'houses'), values);
-      toast({ title: "Add house request sent." });
+
+    const provider = new OpenStreetMapProvider();
+    try {
+      const results = await provider.search({ query: values.address });
+      if (results && results.length > 0) {
+        const { y: lat, x: lon } = results[0];
+        const houseData: House = {
+          ...values,
+          coordinates: [lat, lon],
+        };
+
+        if (editingHouse) {
+          const houseRef = doc(firestore, 'houses', editingHouse.id);
+          updateDocumentNonBlocking(houseRef, houseData);
+          toast({ title: "House update request sent." });
+        } else {
+          addDocumentNonBlocking(collection(firestore, 'houses'), houseData);
+          toast({ title: "Add house request sent." });
+        }
+        handleFormClose();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Geocoding Error",
+          description: "Could not find coordinates for the provided address.",
+        });
+      }
+    } catch (error) {
+      console.error("Geocoding error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "An error occurred while fetching coordinates.",
+      });
     }
-    handleFormClose();
   };
 
   const handleDeleteHouse = (houseId: string) => {

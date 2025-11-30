@@ -21,16 +21,6 @@ import { House, HouseWithId } from "@/lib/types";
 const formSchema = z.object({
   address: z.string().min(1, "Address is required"),
   price: z.coerce.number().positive("Price must be a positive number"),
-  coordinates: z
-    .string()
-    .refine(
-      (val) => {
-        const parts = val.split(",").map((p) => p.trim());
-        return parts.length === 2 && !isNaN(parseFloat(parts[0])) && !isNaN(parseFloat(parts[1]));
-      },
-      { message: "Enter as 'latitude, longitude'" }
-    )
-    .transform((val) => val.split(",").map((p) => parseFloat(p.trim())) as [number, number]),
   size: z.coerce.number().positive(),
   rooms: z.coerce.number().int().positive(),
   year: z.coerce.number().int().min(1800).max(new Date().getFullYear()),
@@ -51,7 +41,7 @@ type FormValues = z.infer<typeof formSchema>;
 interface PropertyFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: House) => void;
+  onSubmit: (values: Omit<House, 'coordinates'>) => void;
   initialData?: HouseWithId | null;
 }
 
@@ -70,11 +60,10 @@ export function PropertyForm({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData
-      ? { ...initialData, coordinates: initialData.coordinates.join(", ") }
+      ? initialData
       : {
           address: "",
           price: 0,
-          coordinates: "",
           size: 0,
           rooms: 1,
           year: new Date().getFullYear(),
@@ -113,16 +102,11 @@ export function PropertyForm({
               <Input id="address" {...register("address")} className="col-span-3" />
               {errors.address && <p className="col-span-4 text-destructive text-sm">{errors.address.message}</p>}
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
                 <div>
                     <Label htmlFor="price">Price</Label>
                     <Input id="price" type="number" {...register("price")} />
                     {errors.price && <p className="text-destructive text-sm">{errors.price.message}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="coordinates">Coordinates</Label>
-                    <Input id="coordinates" {...register("coordinates")} placeholder="lat, long" />
-                    {errors.coordinates && <p className="text-destructive text-sm">{errors.coordinates.message}</p>}
                 </div>
             </div>
              <div className="grid grid-cols-3 gap-4">
