@@ -9,16 +9,20 @@ export type Coordinates = {
   points: GeoPoint[];
 };
 
+export type FloorPlan = {
+  url: string;
+  hint: string;
+};
+
 export type House = {
   address: string;
   coordinates: Coordinates;
   year: number;
   buildingSeries: string;
   floors: number;
-  floorPlanUrl: string;
-  floorPlanHint: string;
   imageUrl: string;
   imageHint: string;
+  floorPlans: FloorPlan[];
 };
 
 export type HouseWithId = House & { id: string };

@@ -26,6 +26,23 @@
       },
       "required": ["type", "points"]
     },
+    "FloorPlan": {
+      "title": "FloorPlan",
+      "type": "object",
+      "description": "Represents a single floor plan with its URL and AI hint.",
+      "properties": {
+        "url": {
+          "type": "string",
+          "description": "URL of the image for the floor plan.",
+          "format": "uri"
+        },
+        "hint": {
+          "type": "string",
+          "description": "A hint for AI to understand the image."
+        }
+      },
+      "required": ["url", "hint"]
+    },
     "House": {
       "title": "House",
       "type": "object",
@@ -50,14 +67,19 @@
           "type": "number",
           "description": "The number of floors in the house."
         },
-        "floorPlanUrl": {
+        "imageUrl": {
           "type": "string",
-          "description": "URL of the image representing the floor plan.",
+          "description": "URL of the image representing the house.",
           "format": "uri"
         },
-        "floorPlanHint": {
+        "imageHint": {
           "type": "string",
-          "description": "A hint for AI to generate a similar image."
+          "description": "A hint for AI to generate a similar image for the house."
+        },
+        "floorPlans": {
+          "type": "array",
+          "description": "An array of floor plans, one for each floor.",
+          "items": { "$ref": "#/entities/FloorPlan" }
         }
       },
       "required": [
@@ -66,8 +88,9 @@
         "year",
         "buildingSeries",
         "floors",
-        "floorPlanUrl",
-        "floorPlanHint"
+        "imageUrl",
+        "imageHint",
+        "floorPlans"
       ]
     },
     "Administrator": {
