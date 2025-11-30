@@ -65,7 +65,7 @@ export default function Home() {
   };
 
  const handleFormSubmit = async (values: Omit<House, 'coordinates'>) => {
-    if (!firestore || !user) return;
+    if (!firestore) return;
 
     try {
       const { OpenStreetMapProvider } = await import('leaflet-geosearch');
@@ -137,11 +137,11 @@ export default function Home() {
   };
 
   const handleDeleteHouse = async (houseId: string) => {
-    if (!firestore || !user) {
+    if (!firestore) {
       toast({
         variant: "destructive",
-        title: "Not authenticated",
-        description: "You must be logged in to delete a house.",
+        title: "Firestore not available",
+        description: "Please try again later.",
       });
       return;
     }
@@ -149,7 +149,7 @@ export default function Home() {
     if (!window.confirm("Вы уверены, что хотите удалить этот дом?")) {
       return;
     }
-
+    
     const houseRef = doc(firestore, 'houses', houseId);
     try {
       await deleteDoc(houseRef);
