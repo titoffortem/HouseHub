@@ -64,10 +64,11 @@ export default function MapComponent({
         if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
             const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
             layer = L.polygon(latLngs, {
-                color: "hsl(231 48% 48%)", // primary
+                color: "hsl(var(--primary))",
                 weight: 2,
-                opacity: 0.8,
-                fillOpacity: 0.2
+                opacity: 0.9,
+                fillColor: "hsl(var(--primary))",
+                fillOpacity: 0.4
             });
             latLngs.forEach(coord => {
               allBounds.push(L.latLng(coord[0], coord[1]))
@@ -77,9 +78,9 @@ export default function MapComponent({
             const latLng = [point.lat, point.lng] as [number, number];
             layer = L.circleMarker(latLng, {
                 radius: 6, // Fixed radius in pixels
-                fillColor: "hsl(231 48% 48%)",
+                fillColor: "hsl(var(--primary))",
                 color: "#FFF",
-                weight: 1,
+                weight: 1.5,
                 opacity: 1,
                 fillOpacity: 0.8
             });
