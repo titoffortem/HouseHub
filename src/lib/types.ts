@@ -1,7 +1,17 @@
+
+export type GeoPoint = {
+  lat: number;
+  lng: number;
+};
+
+export type Coordinates = {
+  type: "Point" | "Polygon";
+  points: GeoPoint[];
+};
+
 export type House = {
   address: string;
-  // Can be a single point [lat, lon] or a polygon [[lat, lon], [lat, lon], ...]
-  coordinates: [number, number] | [number, number][];
+  coordinates: Coordinates;
   year: number;
   buildingSeries: string;
   floors: number;

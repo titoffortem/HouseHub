@@ -1,5 +1,31 @@
 {
   "entities": {
+    "GeoPoint": {
+      "title": "GeoPoint",
+      "type": "object",
+      "description": "Represents a single geographical point with latitude and longitude.",
+      "properties": {
+        "lat": { "type": "number" },
+        "lng": { "type": "number" }
+      },
+      "required": ["lat", "lng"]
+    },
+    "Coordinates": {
+      "title": "Coordinates",
+      "type": "object",
+      "description": "Represents the geographical location, either as a single point or a polygon.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["Point", "Polygon"]
+        },
+        "points": {
+          "type": "array",
+          "items": { "$ref": "#/entities/GeoPoint" }
+        }
+      },
+      "required": ["type", "points"]
+    },
     "House": {
       "title": "House",
       "type": "object",
@@ -10,11 +36,7 @@
           "description": "The address of the house."
         },
         "coordinates": {
-          "type": "array",
-          "items": {
-            "type": "number"
-          },
-          "description": "The latitude and longitude coordinates of the house."
+          "$ref": "#/entities/Coordinates"
         },
         "year": {
           "type": "number",

@@ -4,7 +4,7 @@
 import React, { useEffect, useRef } from 'react';
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import type { HouseWithId } from "@/lib/types";
+import type { HouseWithId, GeoPoint } from "@/lib/types";
 
 // Fix for default icon path issue with webpack
 if (typeof window !== 'undefined') {
@@ -21,11 +21,6 @@ if (typeof window !== 'undefined') {
 interface MapComponentProps {
   houses: HouseWithId[];
   onSelectHouse: (house: HouseWithId) => void;
-}
-
-const isPolygon = (coords: any): coords is [number, number][] => {
-    // A valid polygon is an array of arrays, and the first inner array contains two numbers.
-    return Array.isArray(coords) && Array.isArray(coords[0]) && Array.isArray(coords[0]) && typeof coords[0][0] === 'number';
 }
 
 export default function MapComponent({
@@ -63,9 +58,11 @@ export default function MapComponent({
 
     houses.forEach(house => {
         let layer: L.Layer | null = null;
+        
+        const { coordinates } = house;
 
-        if (isPolygon(house.coordinates)) {
-            const latLngs = house.coordinates as L.LatLngExpression[];
+        if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
+            const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
             layer = L.polygon(latLngs, {
                 color: "hsl(231 48% 48%)", // primary
                 weight: 2,
@@ -73,12 +70,11 @@ export default function MapComponent({
                 fillOpacity: 0.2
             });
             latLngs.forEach(coord => {
-              if (Array.isArray(coord) && typeof coord[0] === 'number' && typeof coord[1] === 'number') {
-                 allBounds.push(L.latLng(coord[0], coord[1]))
-              }
+              allBounds.push(L.latLng(coord[0], coord[1]))
             });
-        } else if (Array.isArray(house.coordinates) && typeof house.coordinates[0] === 'number' && typeof house.coordinates[1] === 'number') {
-            const latLng = house.coordinates as L.LatLngExpression;
+        } else if (coordinates.type === 'Point' && coordinates.points.length > 0) {
+            const point = coordinates.points[0];
+            const latLng = [point.lat, point.lng] as [number, number];
             layer = L.circleMarker(latLng, {
                 radius: 6, // Fixed radius in pixels
                 fillColor: "hsl(231 48% 48%)",
@@ -87,7 +83,7 @@ export default function MapComponent({
                 opacity: 1,
                 fillOpacity: 0.8
             });
-             allBounds.push(L.latLng(house.coordinates[0], house.coordinates[1]));
+            allBounds.push(L.latLng(point.lat, point.lng));
         }
       
       if (layer) {

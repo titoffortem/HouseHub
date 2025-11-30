@@ -1,7 +1,8 @@
+
 "use client";
 
 import * as React from "react";
-import { House, HouseWithId } from "@/lib/types";
+import { House, HouseWithId, Coordinates } from "@/lib/types";
 import { Header } from "@/components/homeview/header";
 import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
@@ -91,15 +92,24 @@ export default function Home() {
       
       if (results && results.length > 0) {
         const result = results[0];
-        let coordinates: [number, number] | [number, number][] = [result.y, result.x]; // Default to point
+        let coordinates: Coordinates;
 
-        // If we get polygon data, use it
-        if (result.raw.geojson && result.raw.geojson.type === 'Polygon') {
-           coordinates = result.raw.geojson.coordinates[0].map((p: [number, number]) => [p[1], p[0]]); // Swap lon/lat to lat/lon
-        } else if (result.raw.geojson && result.raw.geojson.type === 'MultiPolygon') {
-           coordinates = result.raw.geojson.coordinates[0][0].map((p: [number, number]) => [p[1], p[0]]);
+        if (result.raw.geojson && (result.raw.geojson.type === 'Polygon' || result.raw.geojson.type === 'MultiPolygon')) {
+          const polygonCoords = result.raw.geojson.type === 'Polygon' 
+            ? result.raw.geojson.coordinates[0]
+            : result.raw.geojson.coordinates[0][0];
+            
+          coordinates = {
+            type: "Polygon",
+            points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] }))
+          };
+        } else {
+          coordinates = {
+            type: "Point",
+            points: [{ lat: result.y, lng: result.x }]
+          };
         }
-
+        
         const houseData: House = {
           ...values,
           coordinates: coordinates,
