@@ -36,7 +36,7 @@ export function FloorPlanViewer({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="w-screen h-screen max-w-full max-h-full bg-black/90 p-4 sm:p-6 flex flex-col border-0 rounded-none">
         <DialogTitle className="sr-only">
-          {selectedPlan ? `Floor plan for floor ${selectedFloorIndex! + 1}` : "Select a floor to view its plan"}
+          {selectedPlan ? `План этажа ${selectedFloorIndex! + 1}` : "Выберите этаж для просмотра плана"}
         </DialogTitle>
         <div className="absolute top-4 right-4 z-20 flex gap-2">
           {selectedPlan && (
@@ -44,7 +44,7 @@ export function FloorPlanViewer({
               size="icon"
               variant="secondary"
               onClick={() => setSelectedFloorIndex(null)}
-              aria-label="Back to floor list"
+              aria-label="Вернуться к списку этажей"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -53,7 +53,7 @@ export function FloorPlanViewer({
             size="icon"
             variant="secondary"
             onClick={() => handleOpenChange(false)}
-            aria-label="Close viewer"
+            aria-label="Закрыть просмотр"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -64,7 +64,7 @@ export function FloorPlanViewer({
             <div className="relative w-full h-full">
               <Image
                 src={selectedPlan.url}
-                alt={`Floor plan for floor ${selectedFloorIndex! + 1}`}
+                alt={`План этажа ${selectedFloorIndex! + 1}`}
                 fill
                 className="object-contain"
                 sizes="100vw"

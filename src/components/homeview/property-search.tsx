@@ -39,7 +39,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Search by address..."
+            placeholder="Поиск по адресу..."
             className="w-full pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -48,7 +48,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
         </div>
         {/* Popover for filters is hidden as filters are removed */}
         <Button onClick={handleSearch} variant="accent">
-          Search
+          Поиск
         </Button>
          <Button onClick={handleClearFilters} variant="ghost" size="icon">
             <X className="h-5 w-5" />

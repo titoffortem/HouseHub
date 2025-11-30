@@ -28,7 +28,6 @@ interface PropertyDetailsProps {
   onOpenChange: (open: boolean) => void;
   isAdmin: boolean;
   onEdit: (house: HouseWithId) => void;
-  onDelete: (houseId: string) => void;
 }
 
 const DetailItem = ({
@@ -55,7 +54,6 @@ export function PropertyDetails({
   onOpenChange,
   isAdmin,
   onEdit,
-  onDelete,
 }: PropertyDetailsProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
@@ -75,7 +73,7 @@ export function PropertyDetails({
           <ScrollArea className="flex-grow">
             <FloorPlan
               src={house.imageUrl}
-              alt={`Photo of ${house.address}`}
+              alt={`Фото ${house.address}`}
             />
             <div className="p-6">
               <SheetHeader>
@@ -87,23 +85,23 @@ export function PropertyDetails({
             <Separator />
             <div className="p-6">
               <h3 className="text-lg font-headline font-semibold mb-4">
-                Property Details
+                Детали объекта
               </h3>
               <div className="grid grid-cols-2 gap-x-4 gap-y-6">
                 <DetailItem
                   icon={<Calendar className="h-5 w-5" />}
-                  label="Year Built"
+                  label="Год постройки"
                   value={house.year}
                 />
                 <DetailItem
                   icon={<Building className="h-5 w-5" />}
-                  label="Building Series"
+                  label="Серия здания"
                   value={house.buildingSeries}
                 />
                 <div className="flex items-center justify-between col-span-2">
                    <DetailItem
                     icon={<ChevronsUpDown className="h-5 w-5" />}
-                    label="Floors"
+                    label="Этажность"
                     value={house.floors}
                   />
                   <Button variant="outline" size="sm" onClick={() => setIsViewerOpen(true)}>
@@ -123,7 +121,7 @@ export function PropertyDetails({
                     className="flex-1"
                     onClick={() => onEdit(house)}
                   >
-                    <Pencil className="mr-2 h-4 w-4" /> Edit
+                    <Pencil className="mr-2 h-4 w-4" /> Редактировать
                   </Button>
                 </div>
               </SheetFooter>

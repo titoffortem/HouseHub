@@ -113,25 +113,25 @@ export default function Home() {
         if (editingHouse) {
           const houseRef = doc(firestore, 'houses', editingHouse.id);
           await updateDoc(houseRef, houseData);
-          toast({ title: "House updated successfully" });
+          toast({ title: "Данные о доме успешно обновлены" });
         } else {
           await addDoc(collection(firestore, 'houses'), houseData);
-          toast({ title: "House added successfully" });
+          toast({ title: "Дом успешно добавлен" });
         }
         handleFormClose();
       } else {
         toast({
           variant: "destructive",
-          title: "Geocoding Error",
-          description: "Could not find coordinates for the provided address.",
+          title: "Ошибка геокодирования",
+          description: "Не удалось найти координаты для указанного адреса.",
         });
       }
     } catch (error: any) {
       console.error("Firestore error:", error);
       toast({
         variant: "destructive",
-        title: "Error saving house",
-        description: error.message || "An error occurred. Check your permissions.",
+        title: "Ошибка сохранения дома",
+        description: error.message || "Произошла ошибка. Проверьте свои права доступа.",
       });
     }
   };
@@ -140,13 +140,13 @@ export default function Home() {
     if (!firestore || !user) {
       toast({
         variant: "destructive",
-        title: "Authentication Error",
-        description: "You must be logged in to delete a house.",
+        title: "Ошибка аутентификации",
+        description: "Вы должны быть авторизованы, чтобы удалить дом.",
       });
       return;
     }
 
-    if (!window.confirm("Are you sure you want to delete this house?")) {
+    if (!window.confirm("Вы уверены, что хотите удалить этот дом?")) {
       return;
     }
 
@@ -154,20 +154,19 @@ export default function Home() {
       const houseRef = doc(firestore, "houses", houseId);
       await deleteDoc(houseRef);
 
-      // Close the sheet if the deleted house was selected
       if (selectedHouse?.id === houseId) {
         setSelectedHouse(null);
       }
       toast({
-        title: "House deleted successfully",
+        title: "Дом успешно удален",
       });
     } catch (error: any) {
       console.error("Error deleting document: ", error);
       toast({
         variant: "destructive",
-        title: "Error deleting house",
+        title: "Ошибка удаления дома",
         description:
-          error.message || "Could not delete house. Check permissions.",
+          error.message || "Не удалось удалить дом. Проверьте права доступа.",
       });
     }
   };
@@ -179,7 +178,7 @@ export default function Home() {
       <main className="relative h-[calc(100vh-4rem)] w-full">
         <PropertySearch onSearch={handleSearch} />
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">Loading houses...</div>
+          <div className="flex items-center justify-center h-full">Загрузка домов...</div>
         ) : (
           <Map houses={filteredHouses} onSelectHouse={handleSelectHouse} />
         )}
@@ -189,12 +188,11 @@ export default function Home() {
           onOpenChange={handleDeselectHouse}
           isAdmin={!!user}
           onEdit={handleOpenForm}
-          onDelete={handleDeleteHouse}
         />
         {user && (
           <div className="absolute bottom-4 right-4 z-10">
             <Button size="lg" onClick={() => handleOpenForm()}>
-              <Plus className="mr-2 h-5 w-5" /> Add House
+              <Plus className="mr-2 h-5 w-5" /> Добавить дом
             </Button>
           </div>
         )}

@@ -22,16 +22,16 @@ import { Plus, Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
 
 const floorPlanSchema = z.object({
-  url: z.string().url("Must be a valid URL"),
+  url: z.string().url("Должен быть действительный URL"),
 });
 
 const formSchema = z.object({
-  address: z.string().min(1, "Address is required"),
+  address: z.string().min(1, "Адрес обязателен"),
   year: z.coerce.number().int().min(1800).max(new Date().getFullYear()),
-  buildingSeries: z.string().min(1, "Building series is required"),
-  floors: z.coerce.number().int().positive("Must be a positive number"),
-  imageUrl: z.string().url("Must be a valid URL"),
-  floorPlans: z.array(floorPlanSchema).min(1, "At least one floor plan is required"),
+  buildingSeries: z.string().min(1, "Серия здания обязательна"),
+  floors: z.coerce.number().int().positive("Должно быть положительное число"),
+  imageUrl: z.string().url("Должен быть действительный URL"),
+  floorPlans: z.array(floorPlanSchema).min(1, "Требуется хотя бы один план этажа"),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -103,39 +103,39 @@ export function PropertyForm({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px] grid-rows-[auto_1fr_auto] p-0 max-h-[90vh]">
         <DialogHeader className="p-6 pb-0">
-          <DialogTitle>{initialData ? "Edit House" : "Add New House"}</DialogTitle>
+          <DialogTitle>{initialData ? "Редактировать дом" : "Добавить новый дом"}</DialogTitle>
           <DialogDescription>
-            Fill in the details for the property. Click save when you're done.
+            Заполните данные об объекте. Нажмите "Сохранить", когда закончите.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[65vh] overflow-y-auto">
           <form id="property-form" onSubmit={handleSubmit(handleFormSubmit)} className="px-6 py-4 space-y-4">
             <div className="space-y-1">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">Адрес</Label>
               <Input id="address" {...register("address")} />
               {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
             </div>
              <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
-                    <Label htmlFor="year">Year Built</Label>
+                    <Label htmlFor="year">Год постройки</Label>
                     <Input id="year" type="number" {...register("year")} />
                     {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
                 </div>
                 <div className="space-y-1">
-                    <Label htmlFor="buildingSeries">Building Series</Label>
+                    <Label htmlFor="buildingSeries">Серия здания</Label>
                     <Input id="buildingSeries" {...register("buildingSeries")} />
                     {errors.buildingSeries && <p className="text-destructive text-sm">{errors.buildingSeries.message}</p>}
                 </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                    <Label htmlFor="floors">Floors</Label>
+                    <Label htmlFor="floors">Этажность</Label>
                     <Input id="floors" type="number" {...register("floors")} />
                     {errors.floors && <p className="text-destructive text-sm">{errors.floors.message}</p>}
                 </div>
             </div>
              <div className="space-y-1">
-                <Label htmlFor="imageUrl">House Image URL</Label>
+                <Label htmlFor="imageUrl">URL изображения дома</Label>
                 <Input id="imageUrl" {...register("imageUrl")} />
                 {errors.imageUrl && <p className="text-destructive text-sm">{errors.imageUrl.message}</p>}
             </div>
@@ -144,22 +144,22 @@ export function PropertyForm({
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Floor Plans</h3>
+                <h3 className="text-lg font-medium">Планы этажей</h3>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => append({ url: "" })}
                 >
-                  <Plus className="mr-2 h-4 w-4" /> Add Floor
+                  <Plus className="mr-2 h-4 w-4" /> Добавить этаж
                 </Button>
               </div>
 
               {fields.map((field, index) => (
                 <div key={field.id} className="space-y-2 p-4 border rounded-md relative">
-                   <h4 className="font-medium text-sm">Floor {index + 1}</h4>
+                   <h4 className="font-medium text-sm">Этаж {index + 1}</h4>
                   <div className="space-y-1">
-                    <Label htmlFor={`floorPlans.${index}.url`}>Floor Plan URL</Label>
+                    <Label htmlFor={`floorPlans.${index}.url`}>URL плана этажа</Label>
                     <Input
                       id={`floorPlans.${index}.url`}
                       {...register(`floorPlans.${index}.url`)}
@@ -186,9 +186,9 @@ export function PropertyForm({
         </ScrollArea>
         <DialogFooter className="p-6 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            Отмена
           </Button>
-          <Button type="submit" form="property-form">Save changes</Button>
+          <Button type="submit" form="property-form">Сохранить изменения</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
