@@ -1,7 +1,8 @@
 export type House = {
   address: string;
   price: number;
-  coordinates: [number, number];
+  // Can be a single point [lat, lon] or a polygon [[lat, lon], [lat, lon], ...]
+  coordinates: [number, number] | [number, number][];
   size: number; // in sq meters
   rooms: number;
   year: number;

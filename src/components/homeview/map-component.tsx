@@ -23,6 +23,10 @@ interface MapComponentProps {
   onSelectHouse: (house: HouseWithId) => void;
 }
 
+const isPolygon = (coords: any): coords is [number, number][] => {
+    return Array.isArray(coords) && Array.isArray(coords[0]) && Array.isArray(coords[0]);
+}
+
 export default function MapComponent({
   houses,
   onSelectHouse,
@@ -32,53 +36,63 @@ export default function MapComponent({
   const layersRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
-    // Initialize map only if the ref is available and map hasn't been initialized yet
     if (mapRef.current && !mapInstance.current) {
-      mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13); // Yaroslavl coordinates
+      mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
       }).addTo(mapInstance.current);
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
     }
 
-    // Cleanup function to destroy the map instance
     return () => {
       if (mapInstance.current) {
         mapInstance.current.remove();
         mapInstance.current = null;
       }
     };
-  }, []); // Empty dependency array ensures this runs only once on mount and unmount
+  }, []);
 
   useEffect(() => {
     const layers = layersRef.current;
     if (!layers) return;
 
-    // Clear existing layers
     layers.clearLayers();
 
-    // Add new markers for each house
+    const allBounds: L.LatLng[] = [];
+
     houses.forEach(house => {
-      const circleMarker = L.circleMarker(house.coordinates, {
-        radius: 8,
-        fillColor: "hsl(231 48% 48%)", // primary color
-        color: "#000",
-        weight: 1,
-        opacity: 1,
-        fillOpacity: 0.8
-      });
+        let layer: L.Layer;
+
+        if (isPolygon(house.coordinates)) {
+            layer = L.polygon(house.coordinates, {
+                color: "hsl(231 48% 48%)", // primary
+                weight: 2,
+                opacity: 0.8,
+                fillOpacity: 0.2
+            });
+            house.coordinates.forEach(coord => allBounds.push(L.latLng(coord[0], coord[1])));
+        } else {
+            layer = L.circleMarker(house.coordinates, {
+                radius: 8,
+                fillColor: "hsl(231 48% 48%)",
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8
+            });
+            allBounds.push(L.latLng(house.coordinates[0], house.coordinates[1]));
+        }
       
-      circleMarker.on('click', () => {
+      layer.on('click', () => {
           onSelectHouse(house);
       });
 
-      layers.addLayer(circleMarker);
+      layers.addLayer(layer);
     });
 
-    // Fit bounds if houses are available
-    if (houses.length > 0) {
-        const bounds = new L.LatLngBounds(houses.map(h => h.coordinates));
-        if (mapInstance.current && !mapInstance.current.getBounds().contains(bounds)) {
+    if (allBounds.length > 0) {
+        const bounds = new L.LatLngBounds(allBounds);
+        if (mapInstance.current) {
             mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
         }
     }

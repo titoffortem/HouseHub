@@ -13,7 +13,7 @@ import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-// Do not import leaflet-geosearch here to avoid SSR issues
+
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<HouseWithId[]>([]);
@@ -76,24 +76,38 @@ export default function Home() {
     if (!firestore || !user) return;
 
     try {
-      // Dynamically import leaflet-geosearch only on the client-side
+      // Dynamically import the provider only on the client-side when the function is called.
       const { OpenStreetMapProvider } = await import('leaflet-geosearch');
-      const provider = new OpenStreetMapProvider();
       
-      // A more robust way to clean the address
+      const provider = new OpenStreetMapProvider({
+         params: {
+          'polygon_geojson': 1, // Request polygon geometry
+          'addressdetails': 1,
+         }
+      });
+      
       const cleanedAddress = `Россия, ${values.address
-        .replace(/[гд]\./g, '') // Remove г. and д.
-        .replace(/,/g, ' ')    // Replace commas with spaces
-        .replace(/\s+/g, ' ')  // Collapse multiple spaces
+        .replace(/[гд]\./g, '')
+        .replace(/,/g, ' ')
+        .replace(/\s+/g, ' ')
         .trim()}`;
 
       const results = await provider.search({ query: cleanedAddress });
       
       if (results && results.length > 0) {
-        const { y: lat, x: lon } = results[0];
+        const result = results[0];
+        let coordinates: [number, number] | [number, number][] = [result.y, result.x]; // Default to point
+
+        // If we get polygon data, use it
+        if (result.raw.geojson && result.raw.geojson.type === 'Polygon') {
+           coordinates = result.raw.geojson.coordinates[0].map((p: [number, number]) => [p[1], p[0]]); // Swap lon/lat to lat/lon
+        } else if (result.raw.geojson && result.raw.geojson.type === 'MultiPolygon') {
+           coordinates = result.raw.geojson.coordinates[0][0].map((p: [number, number]) => [p[1], p[0]]);
+        }
+
         const houseData: House = {
           ...values,
-          coordinates: [lat, lon],
+          coordinates: coordinates,
         };
 
         if (editingHouse) {
