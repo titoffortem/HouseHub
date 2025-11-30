@@ -13,7 +13,7 @@ import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
 import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { OpenStreetMapProvider } from "leaflet-geosearch";
+// Do not import leaflet-geosearch here to avoid SSR issues
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<HouseWithId[]>([]);
@@ -27,8 +27,6 @@ export default function Home() {
 
   const housesCollection = useMemoFirebase(() => collection(firestore, "houses"), [firestore]);
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
-
-  const isAdmin = !!user; // Show controls if the user is logged in. Permissions are enforced by Firestore rules.
 
   React.useEffect(() => {
     if (allHouses) {
@@ -74,12 +72,16 @@ export default function Home() {
     setEditingHouse(null);
   };
 
-  const handleFormSubmit = async (values: Omit<House, 'coordinates'>) => {
-    if (!firestore) return;
+ const handleFormSubmit = async (values: Omit<House, 'coordinates'>) => {
+    if (!firestore || !user) return;
 
-    const provider = new OpenStreetMapProvider();
     try {
+      // Dynamically import leaflet-geosearch only on the client-side
+      const { OpenStreetMapProvider } = await import('leaflet-geosearch');
+      const provider = new OpenStreetMapProvider();
+      
       const results = await provider.search({ query: values.address });
+      
       if (results && results.length > 0) {
         const { y: lat, x: lon } = results[0];
         const houseData: House = {
@@ -104,17 +106,17 @@ export default function Home() {
         });
       }
     } catch (error) {
-      console.error("Geocoding error:", error);
+      console.error("Geocoding or Firestore error:", error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "An error occurred while fetching coordinates.",
+        description: "An error occurred while saving the house. The address might be invalid.",
       });
     }
   };
 
   const handleDeleteHouse = (houseId: string) => {
-    if (!firestore) return;
+    if (!firestore || !user) return;
     if (window.confirm("Are you sure you want to delete this house?")) {
       const houseRef = doc(firestore, 'houses', houseId);
       deleteDocumentNonBlocking(houseRef);
@@ -138,18 +140,18 @@ export default function Home() {
           house={selectedHouse}
           open={!!selectedHouse}
           onOpenChange={handleDeselectHouse}
-          isAdmin={isAdmin}
+          isAdmin={!!user}
           onEdit={handleOpenForm}
           onDelete={handleDeleteHouse}
         />
-        {isAdmin && (
+        {user && (
           <div className="absolute bottom-4 right-4 z-10">
             <Button size="lg" onClick={() => handleOpenForm()}>
               <Plus className="mr-2 h-5 w-5" /> Add House
             </Button>
           </div>
         )}
-        {isAdmin && isFormOpen && (
+        {user && isFormOpen && (
           <PropertyForm
             open={isFormOpen}
             onOpenChange={handleFormClose}
