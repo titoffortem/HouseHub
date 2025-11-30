@@ -64,7 +64,7 @@ export default function Home() {
     setEditingHouse(null);
   };
 
- const handleFormSubmit = async (values: Omit<House, 'coordinates' | 'floorPlanHint'>) => {
+ const handleFormSubmit = async (values: Omit<House, 'coordinates'>) => {
     if (!firestore || !user) return;
 
     try {
@@ -108,7 +108,6 @@ export default function Home() {
         const houseData: House = {
           ...values,
           coordinates: coordinates,
-          floorPlanHint: "floor plan",
         };
 
         if (editingHouse) {
@@ -154,7 +153,7 @@ export default function Home() {
     const houseRef = doc(firestore, 'houses', houseId);
     try {
       await deleteDoc(houseRef);
-      handleDeselectHouse(); // Close the details panel
+      handleDeselectHouse(); 
       toast({
         title: "Успех",
         description: "Дом успешно удален.",

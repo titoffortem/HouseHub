@@ -76,7 +76,7 @@ export function PropertyDetails({
             <FloorPlan
               src={house.floorPlanUrl}
               alt={`Photo of ${house.address}`}
-              hint={`photo ${house.floorPlanHint}`}
+              hint={"photo of modern building"}
             />
             <div className="p-6">
               <SheetHeader>
