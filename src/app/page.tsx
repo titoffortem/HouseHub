@@ -149,7 +149,7 @@ export default function Home() {
     if (!window.confirm("Вы уверены, что хотите удалить этот дом?")) {
       return;
     }
-    
+
     const houseRef = doc(firestore, 'houses', houseId);
     try {
       await deleteDoc(houseRef);
