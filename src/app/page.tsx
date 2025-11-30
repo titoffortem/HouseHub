@@ -6,7 +6,7 @@ import { Header } from "@/components/homeview/header";
 import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -27,8 +27,8 @@ export default function Home() {
   const housesCollection = useMemoFirebase(() => collection(firestore, "houses"), [firestore]);
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
 
-  const adminRolesCollection = useMemoFirebase(() => user ? doc(firestore, 'roles_admin', user.uid) : null, [firestore, user]);
-  const { data: adminRole } = useCollection(adminRolesCollection);
+  const adminRoleRef = useMemoFirebase(() => user ? doc(firestore, 'roles_admin', user.uid) : null, [firestore, user]);
+  const { data: adminRole } = useDoc(adminRoleRef);
   const isAdmin = !!adminRole;
 
   React.useEffect(() => {
