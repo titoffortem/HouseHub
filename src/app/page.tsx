@@ -80,13 +80,12 @@ export default function Home() {
       const { OpenStreetMapProvider } = await import('leaflet-geosearch');
       const provider = new OpenStreetMapProvider();
       
-      // Clean up the address for better geocoding results
-      const cleanedAddress = values.address
-        .replace(/\bг\b/g, '')
-        .replace(/\bпр-кт\b/g, 'проспект')
-        .replace(/\bд\b/g, '')
-        .replace(/ ,/g, ',')
-        .trim();
+      // A more robust way to clean the address
+      const cleanedAddress = `Россия, ${values.address
+        .replace(/[гд]\./g, '') // Remove г. and д.
+        .replace(/,/g, ' ')    // Replace commas with spaces
+        .replace(/\s+/g, ' ')  // Collapse multiple spaces
+        .trim()}`;
 
       const results = await provider.search({ query: cleanedAddress });
       
