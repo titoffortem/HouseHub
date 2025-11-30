@@ -6,7 +6,7 @@ import { Header } from "@/components/homeview/header";
 import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
-import { useCollection, useFirestore, useUser, useMemoFirebase, useDoc } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -80,7 +80,15 @@ export default function Home() {
       const { OpenStreetMapProvider } = await import('leaflet-geosearch');
       const provider = new OpenStreetMapProvider();
       
-      const results = await provider.search({ query: values.address });
+      // Clean up the address for better geocoding results
+      const cleanedAddress = values.address
+        .replace(/\bг\b/g, '')
+        .replace(/\bпр-кт\b/g, 'проспект')
+        .replace(/\bд\b/g, '')
+        .replace(/ ,/g, ',')
+        .trim();
+
+      const results = await provider.search({ query: cleanedAddress });
       
       if (results && results.length > 0) {
         const { y: lat, x: lon } = results[0];
