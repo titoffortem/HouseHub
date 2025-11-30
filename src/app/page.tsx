@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
-import { addDocumentNonBlocking, updateDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { addDocumentNonBlocking, updateDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 export default function Home() {
@@ -137,35 +137,6 @@ export default function Home() {
     }
   };
 
-  const handleDeleteHouse = async (houseId: string) => {
-    if (!firestore || !user) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "You must be logged in to delete a house.",
-      });
-      return;
-    }
-    if (window.confirm("Are you sure you want to delete this house?")) {
-      const houseRef = doc(firestore, 'houses', houseId);
-      try {
-        await deleteDocumentNonBlocking(houseRef);
-        toast({
-          title: "Success",
-          description: "House deleted successfully.",
-        });
-        handleDeselectHouse();
-      } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Deletion Failed",
-          description: error.message || "An unknown error occurred.",
-        });
-        console.error("Deletion failed:", error);
-      }
-    }
-  };
-
 
   return (
     <div className="relative min-h-screen w-full bg-background">
@@ -183,7 +154,6 @@ export default function Home() {
           onOpenChange={handleDeselectHouse}
           isAdmin={!!user}
           onEdit={handleOpenForm}
-          onDelete={handleDeleteHouse}
         />
         {user && (
           <div className="absolute bottom-4 right-4 z-10">
