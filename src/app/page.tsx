@@ -43,13 +43,8 @@ export default function Home() {
       );
     }
 
-    if (filters.rooms) {
-      results = results.filter((house) => house.rooms === filters.rooms);
-    }
-
-    results = results.filter(
-      (house) => house.price >= filters.minPrice && house.price <= filters.maxPrice
-    );
+    // Since price and rooms are removed, we remove filtering by them.
+    // We can re-add them if needed in the future.
 
     setFilteredHouses(results);
   };

@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -19,11 +19,7 @@ import { House, HouseWithId } from "@/lib/types";
 
 const formSchema = z.object({
   address: z.string().min(1, "Address is required"),
-  price: z.coerce.number().positive("Price must be a positive number"),
-  size: z.coerce.number().positive(),
-  rooms: z.coerce.number().int().positive(),
   year: z.coerce.number().int().min(1800).max(new Date().getFullYear()),
-  wallMaterial: z.string().min(1),
   buildingSeries: z.string().min(1),
   floors: z.coerce.number().int().positive(),
   floorPlanUrl: z.string().url(),
@@ -48,20 +44,22 @@ export function PropertyForm({
   const {
     register,
     handleSubmit,
-    control,
     reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData
-      ? initialData
+      ? {
+          address: initialData.address,
+          year: initialData.year,
+          buildingSeries: initialData.buildingSeries,
+          floors: initialData.floors,
+          floorPlanUrl: initialData.floorPlanUrl,
+          floorPlanHint: initialData.floorPlanHint,
+        }
       : {
           address: "",
-          price: 0,
-          size: 0,
-          rooms: 1,
           year: new Date().getFullYear(),
-          wallMaterial: "",
           buildingSeries: "",
           floors: 1,
           floorPlanUrl: "https://picsum.photos/seed/new/800/600",
@@ -91,35 +89,11 @@ export function PropertyForm({
               <Input id="address" {...register("address")} className="col-span-3" />
               {errors.address && <p className="col-span-4 text-destructive text-sm">{errors.address.message}</p>}
             </div>
-            <div className="grid grid-cols-1 gap-4">
-                <div>
-                    <Label htmlFor="price">Price</Label>
-                    <Input id="price" type="number" {...register("price")} />
-                    {errors.price && <p className="text-destructive text-sm">{errors.price.message}</p>}
-                </div>
-            </div>
-             <div className="grid grid-cols-3 gap-4">
-                <div>
-                    <Label htmlFor="size">Size (m²)</Label>
-                    <Input id="size" type="number" {...register("size")} />
-                    {errors.size && <p className="text-destructive text-sm">{errors.size.message}</p>}
-                </div>
-                <div>
-                    <Label htmlFor="rooms">Rooms</Label>
-                    <Input id="rooms" type="number" {...register("rooms")} />
-                    {errors.rooms && <p className="text-destructive text-sm">{errors.rooms.message}</p>}
-                </div>
+             <div className="grid grid-cols-2 gap-4">
                  <div>
                     <Label htmlFor="year">Year Built</Label>
                     <Input id="year" type="number" {...register("year")} />
                     {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
-                </div>
-            </div>
-             <div className="grid grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="wallMaterial">Wall Material</Label>
-                    <Input id="wallMaterial" {...register("wallMaterial")} />
-                    {errors.wallMaterial && <p className="text-destructive text-sm">{errors.wallMaterial.message}</p>}
                 </div>
                 <div>
                     <Label htmlFor="buildingSeries">Building Series</Label>

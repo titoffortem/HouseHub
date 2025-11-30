@@ -9,10 +9,6 @@
           "type": "string",
           "description": "The address of the house."
         },
-        "price": {
-          "type": "number",
-          "description": "The price of the house."
-        },
         "coordinates": {
           "type": "array",
           "items": {
@@ -20,21 +16,9 @@
           },
           "description": "The latitude and longitude coordinates of the house."
         },
-        "size": {
-          "type": "number",
-          "description": "The size of the house in square meters."
-        },
-        "rooms": {
-          "type": "number",
-          "description": "The number of rooms in the house."
-        },
         "year": {
           "type": "number",
           "description": "The year the house was constructed."
-        },
-        "wallMaterial": {
-          "type": "string",
-          "description": "The material used for the walls of the house."
         },
         "buildingSeries": {
           "type": "string",
@@ -56,12 +40,8 @@
       },
       "required": [
         "address",
-        "price",
         "coordinates",
-        "size",
-        "rooms",
         "year",
-        "wallMaterial",
         "buildingSeries",
         "floors",
         "floorPlanUrl",

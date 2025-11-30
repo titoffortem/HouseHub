@@ -15,8 +15,11 @@ interface PropertySearchProps {
 
 export function PropertySearch({ onSearch }: PropertySearchProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
+  
+  // These filters are no longer used, but we keep the state in case they are re-added.
+  // The UI for them is removed.
   const [rooms, setRooms] = React.useState<number | null>(null);
-  const [priceRange, setPriceRange] = React.useState<[number, number]>([100000, 1000000]);
+  const [priceRange, setPriceRange] = React.useState<[number, number]>([0, 99999999]);
 
   const handleSearch = () => {
     onSearch(searchTerm, { rooms, minPrice: priceRange[0], maxPrice: priceRange[1] });
@@ -25,8 +28,8 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
   const handleClearFilters = () => {
     setSearchTerm("");
     setRooms(null);
-    setPriceRange([100000, 1000000]);
-    onSearch("", { rooms: null, minPrice: 100000, maxPrice: 1000000 });
+    setPriceRange([0, 99999999]);
+    onSearch("", { rooms: null, minPrice: 0, maxPrice: 99999999 });
   }
 
   return (
@@ -43,58 +46,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
         </div>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="icon">
-              <SlidersHorizontal className="h-5 w-5" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <h4 className="font-medium leading-none font-headline">Filters</h4>
-                <p className="text-sm text-muted-foreground">
-                  Refine your search results.
-                </p>
-              </div>
-              <div className="grid gap-2">
-                <div className="grid grid-cols-3 items-center gap-4">
-                  <Label htmlFor="rooms">Rooms</Label>
-                  <Select onValueChange={(value) => setRooms(value === 'any' ? null : Number(value))} value={rooms ? String(rooms) : 'any'}>
-                    <SelectTrigger id="rooms" className="col-span-2 h-8">
-                      <SelectValue placeholder="Any" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Any</SelectItem>
-                      <SelectItem value="1">1</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="3">3</SelectItem>
-                      <SelectItem value="4">4</SelectItem>
-                      <SelectItem value="5">5+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>Price Range</Label>
-                  <div className="text-sm text-muted-foreground">
-                    ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
-                  </div>
-                   <Slider
-                    defaultValue={[100000, 1000000]}
-                    min={0}
-                    max={1000000}
-                    step={50000}
-                    value={priceRange}
-                    onValueChange={(value) => setPriceRange(value as [number, number])}
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <Button onClick={handleSearch} size="sm">Apply</Button>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {/* Popover for filters is hidden as filters are removed */}
         <Button onClick={handleSearch} variant="accent">
           Search
         </Button>
