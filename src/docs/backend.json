@@ -1,0 +1,118 @@
+{
+  "entities": {
+    "GeoPoint": {
+      "title": "GeoPoint",
+      "type": "object",
+      "description": "Represents a single geographical point with latitude and longitude.",
+      "properties": {
+        "lat": { "type": "number" },
+        "lng": { "type": "number" }
+      },
+      "required": ["lat", "lng"]
+    },
+    "Coordinates": {
+      "title": "Coordinates",
+      "type": "object",
+      "description": "Represents the geographical location, either as a single point or a polygon.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["Point", "Polygon"]
+        },
+        "points": {
+          "type": "array",
+          "items": { "$ref": "#/entities/GeoPoint" }
+        }
+      },
+      "required": ["type", "points"]
+    },
+    "House": {
+      "title": "House",
+      "type": "object",
+      "description": "Represents a house with its details and location.",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "The address of the house."
+        },
+        "coordinates": {
+          "$ref": "#/entities/Coordinates"
+        },
+        "year": {
+          "type": "number",
+          "description": "The year the house was constructed."
+        },
+        "buildingSeries": {
+          "type": "string",
+          "description": "The building series the house belongs to."
+        },
+        "floors": {
+          "type": "number",
+          "description": "The number of floors in the house."
+        },
+        "floorPlanUrl": {
+          "type": "string",
+          "description": "URL of the image representing the floor plan.",
+          "format": "uri"
+        },
+        "floorPlanHint": {
+          "type": "string",
+          "description": "A hint for AI to generate a similar image."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the image representing the house.",
+          "format": "uri"
+        },
+        "imageHint": {
+          "type": "string",
+          "description": "A hint for AI to generate a similar image for the house."
+        }
+      },
+      "required": [
+        "address",
+        "coordinates",
+        "year",
+        "buildingSeries",
+        "floors",
+        "floorPlanUrl",
+        "floorPlanHint",
+        "imageUrl",
+        "imageHint"
+      ]
+    },
+    "Administrator": {
+      "title": "Administrator",
+      "type": "object",
+      "description": "Represents an administrator user. Existence of a document in roles_admin/{userId} grants admin privileges.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who is an administrator."
+        }
+      },
+      "required": [
+        "userId"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google"
+    ]
+  },
+  "firestore": {
+    "/houses/{houseId}": {
+      "schema": {
+        "$ref": "#/entities/House"
+      },
+      "description": "Stores the details of each house. Publicly readable, but only writable by administrators."
+    },
+    "/roles_admin/{userId}": {
+      "schema": {
+        "$ref": "#/entities/Administrator"
+      },
+      "description": "A private collection where the existence of a document with a user's UID grants them admin privileges. This collection should not be client-accessible."
+    }
+  }
+}

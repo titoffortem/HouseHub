@@ -8,7 +8,7 @@ import { PropertySearch } from "@/components/homeview/property-search";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, doc, addDoc, updateDoc, deleteDoc, FirestoreError } from "firebase/firestore";
+import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { PropertyForm } from "@/components/homeview/property-form";
@@ -112,10 +112,10 @@ export default function Home() {
 
         if (editingHouse) {
           const houseRef = doc(firestore, 'houses', editingHouse.id);
-          await updateDoc(houseRef, houseData as any);
+          await updateDoc(houseRef, houseData);
           toast({ title: "House updated successfully" });
         } else {
-           await addDoc(collection(firestore, 'houses'), houseData);
+          await addDoc(collection(firestore, 'houses'), houseData);
           toast({ title: "House added successfully" });
         }
         handleFormClose();
@@ -136,6 +136,43 @@ export default function Home() {
     }
   };
 
+  const handleDeleteHouse = async (houseId: string) => {
+    if (!firestore || !user) {
+      toast({
+        variant: "destructive",
+        title: "Authentication Error",
+        description: "You must be logged in to delete a house.",
+      });
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to delete this house?")) {
+      return;
+    }
+
+    try {
+      const houseRef = doc(firestore, "houses", houseId);
+      await deleteDoc(houseRef);
+
+      // Close the sheet if the deleted house was selected
+      if (selectedHouse?.id === houseId) {
+        setSelectedHouse(null);
+      }
+      toast({
+        title: "House deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting document: ", error);
+      toast({
+        variant: "destructive",
+        title: "Error deleting house",
+        description:
+          error.message || "Could not delete house. Check permissions.",
+      });
+    }
+  };
+
+
   return (
     <div className="relative min-h-screen w-full bg-background">
       <Header />
@@ -152,6 +189,7 @@ export default function Home() {
           onOpenChange={handleDeselectHouse}
           isAdmin={!!user}
           onEdit={handleOpenForm}
+          onDelete={handleDeleteHouse}
         />
         {user && (
           <div className="absolute bottom-4 right-4 z-10">

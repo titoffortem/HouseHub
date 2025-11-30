@@ -28,6 +28,7 @@ interface PropertyDetailsProps {
   onOpenChange: (open: boolean) => void;
   isAdmin: boolean;
   onEdit: (house: HouseWithId) => void;
+  onDelete: (houseId: string) => void;
 }
 
 const DetailItem = ({
@@ -54,6 +55,7 @@ export function PropertyDetails({
   onOpenChange,
   isAdmin,
   onEdit,
+  onDelete,
 }: PropertyDetailsProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
@@ -72,9 +74,9 @@ export function PropertyDetails({
         <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col" side="left">
           <ScrollArea className="flex-grow">
             <FloorPlan
-              src={house.floorPlanUrl}
+              src={house.imageUrl}
               alt={`Photo of ${house.address}`}
-              hint={"photo of modern building"}
+              hint={house.imageHint}
             />
             <div className="p-6">
               <SheetHeader>
@@ -123,6 +125,13 @@ export function PropertyDetails({
                     onClick={() => onEdit(house)}
                   >
                     <Pencil className="mr-2 h-4 w-4" /> Edit
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => onDelete(house.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </Button>
                 </div>
               </SheetFooter>

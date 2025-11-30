@@ -17,6 +17,8 @@ export type House = {
   floors: number;
   floorPlanUrl: string;
   floorPlanHint: string;
+  imageUrl: string;
+  imageHint: string;
 };
 
 export type HouseWithId = House & { id: string };

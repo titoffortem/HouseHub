@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -24,6 +25,8 @@ const formSchema = z.object({
   floors: z.coerce.number().int().positive(),
   floorPlanUrl: z.string().url(),
   floorPlanHint: z.string().min(1),
+  imageUrl: z.string().url(),
+  imageHint: z.string().min(1),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -56,14 +59,18 @@ export function PropertyForm({
           floors: initialData.floors,
           floorPlanUrl: initialData.floorPlanUrl,
           floorPlanHint: initialData.floorPlanHint,
+          imageUrl: initialData.imageUrl,
+          imageHint: initialData.imageHint,
         }
       : {
           address: "",
           year: new Date().getFullYear(),
           buildingSeries: "",
           floors: 1,
-          floorPlanUrl: "https://picsum.photos/seed/new/800/600",
+          floorPlanUrl: "https://picsum.photos/seed/plan/800/600",
           floorPlanHint: "floor plan",
+          imageUrl: "https://picsum.photos/seed/house/800/600",
+          imageHint: "modern building",
         },
   });
 
@@ -108,6 +115,17 @@ export function PropertyForm({
                     {errors.floors && <p className="text-destructive text-sm">{errors.floors.message}</p>}
                 </div>
             </div>
+             <div>
+                <Label htmlFor="imageUrl">House Image URL</Label>
+                <Input id="imageUrl" {...register("imageUrl")} />
+                {errors.imageUrl && <p className="text-destructive text-sm">{errors.imageUrl.message}</p>}
+            </div>
+             <div>
+                <Label htmlFor="imageHint">House Image Hint</Label>
+                <Input id="imageHint" {...register("imageHint")} />
+                {errors.imageHint && <p className="text-destructive text-sm">{errors.imageHint.message}</p>}
+            </div>
+            <hr className="my-2" />
              <div>
                 <Label htmlFor="floorPlanUrl">Floor Plan URL</Label>
                 <Input id="floorPlanUrl" {...register("floorPlanUrl")} />
