@@ -18,6 +18,7 @@ export function Header() {
   const auth = useAuth();
 
   const handleLogin = async () => {
+    if (!auth) return;
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -27,6 +28,7 @@ export function Header() {
   };
 
   const handleLogout = async () => {
+    if (!auth) return;
     try {
       await signOut(auth);
     } catch (error) {
@@ -36,8 +38,8 @@ export function Header() {
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6 sticky top-0 z-20">
-      <div className="flex items-center gap-2">
-        <Image src="/logo.png" alt="House Hub Logo" width={120} height={40} />
+      <div className="flex items-center gap-2 font-headline text-xl font-bold">
+        HomeView
       </div>
       <div>
         {isUserLoading ? (
