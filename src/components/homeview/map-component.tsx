@@ -53,15 +53,11 @@ export default function MapComponent({
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
-       L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        {
-          attribution:
-            '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-          subdomains: 'abcd',
-          maxZoom: 20,
-        }
-      ).addTo(mapInstance.current);
+       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 20,
+      }).addTo(mapInstance.current);
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
     }
 
@@ -79,23 +75,25 @@ export default function MapComponent({
 
     layers.clearLayers();
 
-    const allBounds: L.LatLng[] = [];
     const highlightedIds = highlightedHouses ? new Set(highlightedHouses.map(h => h.id)) : null;
 
     houses.forEach(house => {
         let layer: L.Layer | null = null;
-        const isHighlighted = highlightedHouses === null || (highlightedIds && highlightedIds.has(house.id));
+        const isHighlighted = highlightedIds ? highlightedIds.has(house.id) : false;
+        const isFiltered = highlightedHouses !== null; // Is a search active?
+
+        // If a search is active, non-highlighted houses get a muted style
+        const baseStyle = (isFiltered && !isHighlighted) 
+          ? { ...defaultStyle, color: '#888', fillColor: '#888', opacity: 0.5, fillOpacity: 0.1 } 
+          : defaultStyle;
         
-        const style = isHighlighted ? highlightedStyle : defaultStyle;
+        const style = isHighlighted ? highlightedStyle : baseStyle;
 
         const { coordinates } = house;
 
         if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
             const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
             layer = L.polygon(latLngs, style);
-            if (isHighlighted) {
-              latLngs.forEach(coord => allBounds.push(L.latLng(coord[0], coord[1])));
-            }
         } else if (coordinates.type === 'Point' && coordinates.points.length > 0) {
             const point = coordinates.points[0];
             const latLng = [point.lat, point.lng] as [number, number];
@@ -107,9 +105,6 @@ export default function MapComponent({
                 opacity: style.opacity,
                 fillOpacity: style.fillOpacity
             });
-            if (isHighlighted) {
-              allBounds.push(L.latLng(point.lat, point.lng));
-            }
         }
       
       if (layer) {
@@ -120,13 +115,19 @@ export default function MapComponent({
       }
     });
 
-    if (allBounds.length > 0 && mapInstance.current) {
-        const bounds = new L.LatLngBounds(allBounds);
+    if (highlightedHouses && highlightedHouses.length > 0 && mapInstance.current) {
+        const boundsPoints: L.LatLng[] = [];
+        highlightedHouses.forEach(house => {
+             house.coordinates.points.forEach(p => {
+                boundsPoints.push(L.latLng(p.lat, p.lng));
+            });
+        });
+        const bounds = new L.LatLngBounds(boundsPoints);
         if (bounds.isValid()) {
             mapInstance.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
         }
     } else if (isInitialLoad.current && houses.length > 0 && mapInstance.current) {
-        // On initial load, fit all houses if no specific filter is active
+        // On initial load, fit all houses
         const allHousesBounds: L.LatLng[] = [];
         houses.forEach(house => {
             house.coordinates.points.forEach(p => {
