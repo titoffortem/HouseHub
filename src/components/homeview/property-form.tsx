@@ -20,26 +20,55 @@ import { House, HouseWithId } from "@/lib/types";
 import { useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Separator } from "../ui/separator";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const floorPlanSchema = z.object({
   url: z.string().url("Должен быть действительный URL"),
 });
 
 const formSchema = z.object({
-  address: z.string().min(1, "Адрес обязателен"),
+  address: z.string(),
   year: z.coerce.number().int().min(1800).max(new Date().getFullYear()),
   buildingSeries: z.string().min(1, "Серия здания обязательна"),
   floors: z.coerce.number().int().positive("Должно быть положительное число"),
   imageUrl: z.string().url("Должен быть действительный URL"),
   floorPlans: z.array(floorPlanSchema).min(1, "Требуется хотя бы один план этажа"),
+  lat: z.coerce.number().optional(),
+  lng: z.coerce.number().optional(),
+  inputType: z.enum(['address', 'coords']).default('address'),
+}).superRefine((data, ctx) => {
+    if (data.inputType === 'address' && !data.address) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['address'],
+            message: 'Адрес обязателен',
+        });
+    }
+    if (data.inputType === 'coords') {
+        if (data.lat === undefined || Number.isNaN(data.lat)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lat'], message: 'Широта обязательна' });
+        }
+        if (data.lng === undefined || Number.isNaN(data.lng)) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lng'], message: 'Долгота обязательна' });
+        }
+        if (!data.address) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['address'],
+                message: 'Определите адрес по координатам.',
+            });
+        }
+    }
 });
 
-type FormValues = z.infer<typeof formSchema>;
+
+export type FormValues = z.infer<typeof formSchema>;
 
 interface PropertyFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: Omit<House, 'coordinates'>) => void;
+  onSubmit: (values: FormValues) => void;
+  onReverseGeocode: (lat: number, lng: number) => Promise<string | null>;
   initialData?: HouseWithId | null;
 }
 
@@ -47,6 +76,7 @@ export function PropertyForm({
   open,
   onOpenChange,
   onSubmit,
+  onReverseGeocode,
   initialData,
 }: PropertyFormProps) {
   const {
@@ -54,10 +84,15 @@ export function PropertyForm({
     control,
     handleSubmit,
     reset,
+    watch,
+    getValues,
+    setValue,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      address: "",
+      inputType: "address",
       floorPlans: [],
     },
   });
@@ -66,24 +101,31 @@ export function PropertyForm({
     control,
     name: "floorPlans",
   });
+  
+  const inputType = watch("inputType");
 
   useEffect(() => {
     if (open) {
-      reset(initialData
-        ? {
-            ...initialData,
-          }
-        : {
-            address: "",
-            year: new Date().getFullYear(),
-            buildingSeries: "",
-            floors: 1,
-            imageUrl: "",
-            floorPlans: [
-              { url: "" },
-            ],
-          }
-      );
+      if (initialData) {
+        reset({
+          ...initialData,
+          inputType: 'address', // Always start with address for editing
+          lat: initialData.coordinates.points[0]?.lat,
+          lng: initialData.coordinates.points[0]?.lng,
+        });
+      } else {
+        reset({
+          address: "",
+          year: new Date().getFullYear(),
+          buildingSeries: "",
+          floors: 1,
+          imageUrl: "",
+          floorPlans: [{ url: "" }],
+          inputType: 'address',
+          lat: undefined,
+          lng: undefined,
+        });
+      }
     }
   }, [open, initialData, reset]);
 
@@ -99,6 +141,20 @@ export function PropertyForm({
     onOpenChange(isOpen);
   };
 
+  const handleReverseGeocodeClick = async () => {
+    const lat = getValues("lat");
+    const lng = getValues("lng");
+    if (lat !== undefined && lng !== undefined) {
+      setValue('address', 'Поиск адреса...', { shouldValidate: false });
+      const address = await onReverseGeocode(lat, lng);
+      if (address) {
+        setValue("address", address, { shouldValidate: true });
+      } else {
+        setValue("address", "", { shouldValidate: true });
+      }
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px] grid-rows-[auto_1fr_auto] p-0 max-h-[90vh]">
@@ -110,11 +166,59 @@ export function PropertyForm({
         </DialogHeader>
         <ScrollArea className="h-[65vh] overflow-y-auto">
           <form id="property-form" onSubmit={handleSubmit(handleFormSubmit)} className="px-6 py-4 space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="address">Адрес</Label>
-              <Input id="address" {...register("address")} />
-              {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
+            
+            <div className="space-y-2">
+              <Label>Способ ввода</Label>
+               <Controller
+                control={control}
+                name="inputType"
+                render={({ field }) => (
+                    <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className="flex space-x-4 pt-1"
+                    >
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="address" id="r1" />
+                            <Label htmlFor="r1" className="font-normal">По адресу</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="coords" id="r2" />
+                            <Label htmlFor="r2" className="font-normal">По координатам</Label>
+                        </div>
+                    </RadioGroup>
+                )}
+            />
             </div>
+
+            {inputType === 'address' ? (
+              <div className="space-y-1">
+                <Label htmlFor="address">Адрес</Label>
+                <Input id="address" {...register("address")} />
+                {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
+              </div>
+            ) : (
+              <div className="space-y-4 rounded-lg border p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="lat">Широта</Label>
+                        <Input id="lat" type="number" step="any" {...register("lat")} placeholder="e.g. 57.626" />
+                        {errors.lat && <p className="text-destructive text-sm">{errors.lat.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="lng">Долгота</Label>
+                        <Input id="lng" type="number" step="any" {...register("lng")} placeholder="e.g. 39.897" />
+                        {errors.lng && <p className="text-destructive text-sm">{errors.lng.message}</p>}
+                    </div>
+                </div>
+                 <Button type="button" variant="outline" size="sm" onClick={handleReverseGeocodeClick}>Найти адрес по координатам</Button>
+                <div className="space-y-1">
+                    <Label htmlFor="address-readonly">Найденный адрес</Label>
+                    <Input id="address-readonly" {...register("address")} readOnly className="bg-muted"/>
+                    {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
+                </div>
+              </div>
+            )}
              <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
                     <Label htmlFor="year">Год постройки</Label>

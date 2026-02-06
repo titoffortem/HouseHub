@@ -10,7 +10,7 @@ import { useCollection, useFirestore, useUser, useMemoFirebase, useDoc } from "@
 import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { PropertyForm } from "@/components/homeview/property-form";
+import { PropertyForm, type FormValues } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
 
 
@@ -65,7 +65,26 @@ export default function Home() {
     setEditingHouse(null);
   };
 
- const handleFormSubmit = async (values: Omit<House, 'coordinates'>) => {
+  const handleReverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru`);
+      if (!response.ok) {
+        throw new Error('Reverse geocoding request failed');
+      }
+      const data = await response.json();
+      if (data && data.display_name) {
+        return data.display_name;
+      }
+      toast({ variant: "destructive", title: "Адрес не найден", description: "Не удалось найти адрес для этих координат." });
+      return null;
+    } catch (error) {
+      console.error("Reverse geocoding error:", error);
+      toast({ variant: "destructive", title: "Ошибка определения адреса", description: "Произошла ошибка при запросе к сервису геокодирования." });
+      return null;
+    }
+  };
+
+ const handleFormSubmit = async (values: FormValues) => {
     if (!firestore) return;
 
     try {
@@ -107,13 +126,18 @@ export default function Home() {
         }
         
         const houseData: House = {
-          ...values,
+          address: values.address,
+          year: values.year,
+          buildingSeries: values.buildingSeries,
+          floors: values.floors,
+          imageUrl: values.imageUrl,
+          floorPlans: values.floorPlans,
           coordinates: coordinates,
         };
 
         if (editingHouse) {
           const houseRef = doc(firestore, 'houses', editingHouse.id);
-          await updateDoc(houseRef, houseData);
+          await updateDoc(houseRef, houseData as any);
           toast({ title: "Данные о доме успешно обновлены" });
         } else {
           await addDoc(collection(firestore, 'houses'), houseData);
@@ -202,6 +226,7 @@ export default function Home() {
             open={isFormOpen}
             onOpenChange={handleFormClose}
             onSubmit={handleFormSubmit}
+            onReverseGeocode={handleReverseGeocode}
             initialData={editingHouse}
           />
         )}
