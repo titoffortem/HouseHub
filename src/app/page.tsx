@@ -112,9 +112,11 @@ export default function Home() {
   const handleOpenForm = (house?: HouseWithId) => {
     setEditingHouse(house || null);
     setIsFormOpen(true);
+    // Reset picking state when opening form
     setPickedCoords(null);
     setPickedOsmInfo(null);
     setMarkerPosition(null);
+    setIsPickingLocation(false);
   };
 
   const handleFormClose = () => {
@@ -139,9 +141,11 @@ export default function Home() {
       setPickedCoords(latlng);
       setMarkerPosition([latlng.lat, latlng.lng]);
       setIsPickingLocation(false);
-      setIsFormOpen(true); // Re-open form
+      // Re-open form with the new coordinates. It will trigger the useEffect in PropertyForm
+      setIsFormOpen(true);
     }
   };
+
 
   const handleSetIsPickingLocation = (isPicking: boolean) => {
     setIsPickingLocation(isPicking);
@@ -160,7 +164,6 @@ export default function Home() {
     lng: number
   ): Promise<string | null> => {
     try {
-      // Add addressdetails=1 to get address components
       const response = await fetch(
         `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=ru`
       );
@@ -175,24 +178,18 @@ export default function Home() {
         const road = address.road || "";
         const houseNumber = address.house_number || "";
         
-        // Strip street types like "улица", "проспект" for better geocoding later
         const streetTypes = /улица|проспект|переулок|площадь|шоссе|бульвар|набережная|проезд/gi;
         const cleanedRoad = road.replace(streetTypes, "").trim();
 
-        // We need at least a road and house number to consider it a valid house address
-        const formattedAddress = (cleanedRoad && houseNumber) ? [city, cleanedRoad, houseNumber].filter(Boolean).join(" ") : null;
+        const formattedAddress = [city, cleanedRoad, houseNumber].filter(Boolean).join(" ");
         
-        // Now, decide whether to get the polygon for the found object.
-        // We only want a polygon if it's explicitly a building and not a POI or a large area.
         const isBuilding = data.category === 'building';
         
-        // Only try to get a polygon if the returned object is a building and is not just a point ('node').
         if (isBuilding && data.osm_type !== 'node' && data.osm_id) {
           setPickedOsmInfo({ osm_type: data.osm_type, osm_id: data.osm_id });
         } else {
-          // If it's a shop, organization, or just a point on the map, we don't fetch a polygon.
           setPickedOsmInfo(null);
-          if (formattedAddress) { // Only show toast if we found an address but no polygon
+          if (formattedAddress) {
               toast({
                 title: "Контур здания не найден",
                 description: "Сохранена будет только точка на карте.",
@@ -205,14 +202,13 @@ export default function Home() {
         }
       }
       
-      // Fallback if we couldn't construct a proper address
       toast({
         variant: "destructive",
         title: "Точный адрес дома не найден",
         description: "Пожалуйста, кликните точнее на здание. Будет сохранена только точка.",
       });
-      setPickedOsmInfo(null); // Ensure no polygon is fetched
-      return data.display_name || null; // Return full name as a last resort
+      setPickedOsmInfo(null);
+      return data.display_name || null;
 
     } catch (error) {
       console.error("Reverse geocoding error:", error);
@@ -229,71 +225,50 @@ export default function Home() {
 
   const handleFormSubmit = async (values: FormValues) => {
     if (!firestore) return;
-  
+
     let houseData: House;
     let coordinates: Coordinates | undefined;
-  
+
     try {
-      // --- Logic for ADDING a new house ---
-      if (editingHouse === null) {
-        let foundPolygon = false;
-        // 1. Try to get a precise polygon using OSM info from the map click
-        if (pickedOsmInfo) {
-          const osmTypeChar = pickedOsmInfo.osm_type.charAt(0).toUpperCase();
-          const osmId = `${osmTypeChar}${pickedOsmInfo.osm_id}`;
-  
-          const lookupResponse = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osmId}&format=jsonv2&polygon_geojson=1`);
-  
-          if (lookupResponse.ok) {
-            const lookupData = await lookupResponse.json();
-            if (lookupData && lookupData.length > 0 && lookupData[0].geojson) {
-              const result = lookupData[0];
-              if (result.geojson.type === "Polygon") {
-                const polygonCoords = result.geojson.coordinates[0];
-                coordinates = {
-                  type: "Polygon",
-                  points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
-                };
-                foundPolygon = true;
-              } else if (result.geojson.type === "MultiPolygon") {
-                const polygonCoords = result.geojson.coordinates[0][0];
-                coordinates = {
-                  type: "Polygon",
-                  points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
-                };
-                foundPolygon = true;
-              }
+      // --- Phase 1: Determine coordinates ---
+
+      // A. High-precision lookup for new houses from map click (optimization)
+      if (editingHouse === null && pickedOsmInfo) {
+        const osmTypeChar = pickedOsmInfo.osm_type.charAt(0).toUpperCase();
+        const osmId = `${osmTypeChar}${pickedOsmInfo.osm_id}`;
+        const lookupResponse = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osmId}&format=jsonv2&polygon_geojson=1`);
+        
+        if (lookupResponse.ok) {
+          const lookupData = await lookupResponse.json();
+          if (lookupData && lookupData.length > 0 && lookupData[0].geojson) {
+            const result = lookupData[0];
+            if (result.geojson.type === "Polygon") {
+              const polygonCoords = result.geojson.coordinates[0];
+              coordinates = {
+                type: "Polygon",
+                points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
+              };
+            } else if (result.geojson.type === "MultiPolygon") {
+              const polygonCoords = result.geojson.coordinates[0][0]; // Take the first polygon
+              coordinates = {
+                type: "Polygon",
+                points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
+              };
             }
           }
         }
-  
-        // 2. If no precise polygon was found, but we clicked the map, use the clicked point.
-        // This is the fallback when reverse geocoding gives a "node" or a POI without a building polygon.
-        if (!foundPolygon && pickedCoords) {
-          coordinates = {
-            type: "Point",
-            points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
-          };
-        }
       }
-  
-      // --- Logic for EDITING or ADDING BY MANUAL ADDRESS ---
-      // This block is only reached if coordinates are still undefined.
-      // This happens when:
-      // a) Editing an existing house.
-      // b) Adding a new house by typing an address (pickedCoords is null).
-      // It will NOT be reached when adding by map click, because `coordinates` will
-      // have been set to either a Polygon or a Point in the block above.
-      if (!coordinates) {
+
+      // B. Standard geocoding by address (for edits, manual adds, or as a reliable fallback for map clicks)
+      if (!coordinates && values.address) {
         const { OpenStreetMapProvider } = await import("leaflet-geosearch");
         const provider = new OpenStreetMapProvider({
-          params: { polygon_geojson: 1, addressdetails: 1 },
+          params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
         });
         const results = await provider.search({ query: values.address });
-  
+
         if (results && results.length > 0) {
           const result = results[0];
-  
           if (
             result.raw.geojson &&
             (result.raw.geojson.type === "Polygon" || result.raw.geojson.type === "MultiPolygon")
@@ -310,21 +285,34 @@ export default function Home() {
               })),
             };
           } else {
+            // If geocoding finds a result but no polygon, use its point.
             coordinates = {
               type: "Point",
               points: [{ lat: result.y, lng: result.x }],
             };
           }
-        } else {
-          toast({
-            variant: "destructive",
-            title: "Ошибка геокодирования",
-            description: "Не удалось найти координаты для указанного адреса.",
-          });
-          return;
         }
       }
-  
+
+      // C. Final fallback for new houses if all geocoding fails: use the clicked point.
+      if (!coordinates && editingHouse === null && pickedCoords) {
+          coordinates = {
+              type: "Point",
+              points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+          };
+      }
+
+      // If after all attempts, we still don't have coordinates, show an error.
+      if (!coordinates) {
+        toast({
+          variant: "destructive",
+          title: "Ошибка геокодирования",
+          description: "Не удалось найти координаты для указанного адреса. Попробуйте указать точнее.",
+        });
+        return;
+      }
+      
+      // --- Phase 2: Assemble and save data ---
       houseData = {
         address: values.address,
         year: values.year,
@@ -334,7 +322,7 @@ export default function Home() {
         floorPlans: values.floorPlans.filter((p) => p.url),
         coordinates: coordinates,
       };
-  
+
     } catch (error: any) {
       console.error("Geocoding/Data processing error:", error);
       toast({
@@ -344,7 +332,8 @@ export default function Home() {
       });
       return;
     }
-  
+
+    // --- Phase 3: Firestore operation ---
     if (editingHouse) {
       const houseRef = doc(firestore, "houses", editingHouse.id);
       updateDocumentNonBlocking(houseRef, houseData as any);
@@ -380,7 +369,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full bg-background">
-      <Header onSearch={(searchTerm) => handleSearch(searchTerm)} />
+      <Header onSearch={handleSearch} />
       <main className="relative h-[calc(100vh-4rem)] w-full">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
