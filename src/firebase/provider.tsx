@@ -133,17 +133,19 @@ export const useFirebase = (): FirebaseServicesAndUser => {
     throw new Error('useFirebase must be used within a FirebaseProvider.');
   }
 
-  if (!context.areServicesAvailable || !context.firebaseApp || !context.firestore || !context.auth) {
+  const { areServicesAvailable, firebaseApp, firestore, auth, user, isUserLoading, userError } = context;
+
+  if (!areServicesAvailable || !firebaseApp || !firestore || !auth) {
     throw new Error('Firebase core services not available. Check FirebaseProvider props.');
   }
 
   return {
-    firebaseApp: context.firebaseApp,
-    firestore: context.firestore,
-    auth: context.auth,
-    user: context.user,
-    isUserLoading: context.isUserLoading,
-    userError: context.userError,
+    firebaseApp,
+    firestore,
+    auth,
+    user,
+    isUserLoading,
+    userError,
   };
 };
 
