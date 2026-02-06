@@ -41,7 +41,6 @@ export default function Home() {
     lat: number;
     lng: number;
   } | null>(null);
-  const [pickedOsmInfo, setPickedOsmInfo] = React.useState<{ osm_type: string; osm_id: number; } | null>(null);
   const [markerPosition, setMarkerPosition] = React.useState<
     [number, number] | null
   >(null);
@@ -114,7 +113,6 @@ export default function Home() {
     setIsFormOpen(true);
     // Reset picking state when opening form
     setPickedCoords(null);
-    setPickedOsmInfo(null);
     setMarkerPosition(null);
     setIsPickingLocation(false);
   };
@@ -124,7 +122,6 @@ export default function Home() {
     setEditingHouse(null);
     setIsPickingLocation(false);
     setPickedCoords(null);
-    setPickedOsmInfo(null);
     setMarkerPosition(null);
     if (pickingToastId) {
       dismiss(pickingToastId);
@@ -183,31 +180,11 @@ export default function Home() {
 
         const formattedAddress = [city, cleanedRoad, houseNumber].filter(Boolean).join(" ");
         
-        const isBuilding = data.category === 'building';
-        
-        if (isBuilding && data.osm_type !== 'node' && data.osm_id) {
-          setPickedOsmInfo({ osm_type: data.osm_type, osm_id: data.osm_id });
-        } else {
-          setPickedOsmInfo(null);
-          if (formattedAddress) {
-              toast({
-                title: "Контур здания не найден",
-                description: "Сохранена будет только точка на карте.",
-              });
-          }
-        }
-
         if (formattedAddress) {
             return formattedAddress;
         }
       }
       
-      toast({
-        variant: "destructive",
-        title: "Точный адрес дома не найден",
-        description: "Пожалуйста, кликните точнее на здание. Будет сохранена только точка.",
-      });
-      setPickedOsmInfo(null);
       return data.display_name || null;
 
     } catch (error) {
@@ -218,7 +195,6 @@ export default function Home() {
         description:
           "Произошла ошибка при запросе к сервису геокодирования.",
       });
-      setPickedOsmInfo(null);
       return null;
     }
   }, [toast]);
@@ -232,35 +208,8 @@ export default function Home() {
     try {
       // --- Phase 1: Determine coordinates ---
 
-      // A. High-precision lookup for new houses from map click (optimization)
-      if (editingHouse === null && pickedOsmInfo) {
-        const osmTypeChar = pickedOsmInfo.osm_type.charAt(0).toUpperCase();
-        const osmId = `${osmTypeChar}${pickedOsmInfo.osm_id}`;
-        const lookupResponse = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osmId}&format=jsonv2&polygon_geojson=1`);
-        
-        if (lookupResponse.ok) {
-          const lookupData = await lookupResponse.json();
-          if (lookupData && lookupData.length > 0 && lookupData[0].geojson) {
-            const result = lookupData[0];
-            if (result.geojson.type === "Polygon") {
-              const polygonCoords = result.geojson.coordinates[0];
-              coordinates = {
-                type: "Polygon",
-                points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
-              };
-            } else if (result.geojson.type === "MultiPolygon") {
-              const polygonCoords = result.geojson.coordinates[0][0]; // Take the first polygon
-              coordinates = {
-                type: "Polygon",
-                points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
-              };
-            }
-          }
-        }
-      }
-
-      // B. Standard geocoding by address (for edits, manual adds, or as a reliable fallback for map clicks)
-      if (!coordinates && values.address) {
+      // Standard geocoding by address (for edits, manual adds, or as a reliable fallback for map clicks)
+      if (values.address) {
         const { OpenStreetMapProvider } = await import("leaflet-geosearch");
         const provider = new OpenStreetMapProvider({
           params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
