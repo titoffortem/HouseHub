@@ -26,10 +26,13 @@ export function Header({ onSearch }: HeaderProps) {
   const auth = useAuth();
   const { toast } = useToast();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider).catch(error => {
+    try {
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle the successful login
+    } catch (error: any) {
       // Check for the most common issues first.
       if (error.code === 'auth/popup-blocked') {
         toast({
@@ -57,7 +60,7 @@ export function Header({ onSearch }: HeaderProps) {
         });
       }
       console.error("Error signing in with Google: ", error);
-    });
+    }
   };
 
   const handleLogout = async () => {
