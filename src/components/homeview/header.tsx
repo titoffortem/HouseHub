@@ -45,11 +45,11 @@ export function Header({ onSearch }: HeaderProps) {
         const hostname = window.location.hostname;
         toast({
           title: "Окно входа было закрыто",
-          description: `Это может произойти, если домен "${hostname}" не добавлен в список авторизованных доменов в Firebase. Проверьте настройки Authentication в консоли Firebase.`,
+          description: `Это может быть вызвано проблемой с конфигурацией проекта. Проверьте в консоли Firebase: 1) В разделе Authentication > Settings > Authorized Domains должен быть добавлен домен "${hostname}". 2) Убедитесь, что ваш OAuth Consent Screen в Google Cloud настроен.`,
           variant: "destructive",
-          duration: 15000,
+          duration: 20000,
         });
-        console.error(`Popup closed by user. This can happen if the domain "${hostname}" is not in the Firebase Auth authorized domains list.`);
+        console.error(`Popup closed by user. This can happen if the domain "${hostname}" is not in the Firebase Auth authorized domains list, or if there's a GCP OAuth configuration issue.`);
       } else {
         // A more generic error, possibly related to config.
         toast({
@@ -58,8 +58,8 @@ export function Header({ onSearch }: HeaderProps) {
           variant: "destructive",
           duration: 10000,
         });
+        console.error("Error signing in with Google: ", error);
       }
-      console.error("Error signing in with Google: ", error);
     }
   };
 
