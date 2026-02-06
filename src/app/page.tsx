@@ -41,6 +41,7 @@ export default function Home() {
     lat: number;
     lng: number;
   } | null>(null);
+  const [pickedOsmInfo, setPickedOsmInfo] = React.useState<{ osm_type: string; osm_id: number; } | null>(null);
   const [markerPosition, setMarkerPosition] = React.useState<
     [number, number] | null
   >(null);
@@ -112,6 +113,7 @@ export default function Home() {
     setEditingHouse(house || null);
     setIsFormOpen(true);
     setPickedCoords(null);
+    setPickedOsmInfo(null);
     setMarkerPosition(null);
   };
 
@@ -120,6 +122,7 @@ export default function Home() {
     setEditingHouse(null);
     setIsPickingLocation(false);
     setPickedCoords(null);
+    setPickedOsmInfo(null);
     setMarkerPosition(null);
     if (pickingToastId) {
       dismiss(pickingToastId);
@@ -165,6 +168,18 @@ export default function Home() {
       }
       const data = await response.json();
       if (data && data.display_name) {
+        // We want buildings, which are usually 'way' or 'relation'.
+        // If it's just a 'node', it's likely not a building outline we can use.
+        if (data.osm_type && data.osm_id && data.osm_type !== 'node') {
+          setPickedOsmInfo({ osm_type: data.osm_type, osm_id: data.osm_id });
+        } else {
+          setPickedOsmInfo(null);
+          toast({
+            variant: "destructive",
+            title: "Контур здания не найден",
+            description: "Пожалуйста, кликните точнее на здание. Будет сохранена только точка.",
+          });
+        }
         return data.display_name;
       }
       toast({
@@ -172,6 +187,7 @@ export default function Home() {
         title: "Адрес не найден",
         description: "Не удалось найти адрес для этих координат.",
       });
+      setPickedOsmInfo(null);
       return null;
     } catch (error) {
       console.error("Reverse geocoding error:", error);
@@ -181,6 +197,7 @@ export default function Home() {
         description:
           "Произошла ошибка при запросе к сервису геокодирования.",
       });
+      setPickedOsmInfo(null);
       return null;
     }
   };
@@ -191,62 +208,112 @@ export default function Home() {
     let houseData: House;
 
     try {
-      const { OpenStreetMapProvider } = await import("leaflet-geosearch");
-      const provider = new OpenStreetMapProvider({
-        params: { polygon_geojson: 1, addressdetails: 1 },
-      });
-      const results = await provider.search({ query: values.address });
+      let coordinates: Coordinates;
 
-      if (results && results.length > 0) {
-        const result = results[0];
-        let coordinates: Coordinates;
+      // If adding a NEW house and we have OSM info from a map click, use that to get a precise polygon.
+      if (editingHouse === null && pickedOsmInfo) {
+        const osmTypeChar = pickedOsmInfo.osm_type.charAt(0).toUpperCase();
+        const osmId = `${osmTypeChar}${pickedOsmInfo.osm_id}`;
+        
+        const lookupResponse = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osmId}&format=jsonv2&polygon_geojson=1`);
+        
+        if (!lookupResponse.ok) {
+            throw new Error('OSM lookup request failed');
+        }
+        const lookupData = await lookupResponse.json();
 
-        if (
-          result.raw.geojson &&
-          (result.raw.geojson.type === "Polygon" ||
-            result.raw.geojson.type === "MultiPolygon")
-        ) {
-          const polygonCoords =
-            result.raw.geojson.type === "Polygon"
-              ? result.raw.geojson.coordinates[0]
-              : result.raw.geojson.coordinates[0][0];
-          coordinates = {
-            type: "Polygon",
-            points: polygonCoords.map((p: [number, number]) => ({
-              lat: p[1],
-              lng: p[0],
-            })),
-          };
-        } else {
-          coordinates = {
-            type: "Point",
-            points: [{ lat: result.y, lng: result.x }],
-          };
+        let foundPolygon = false;
+        if (lookupData && lookupData.length > 0 && lookupData[0].geojson) {
+            const result = lookupData[0];
+            if (result.geojson.type === "Polygon") {
+                const polygonCoords = result.geojson.coordinates[0];
+                coordinates = {
+                    type: "Polygon",
+                    points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
+                };
+                foundPolygon = true;
+            } else if (result.geojson.type === "MultiPolygon") {
+                // Take the first, usually largest, polygon of a multipolygon
+                const polygonCoords = result.geojson.coordinates[0][0]; 
+                coordinates = {
+                    type: "Polygon",
+                    points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
+                };
+                foundPolygon = true;
+            }
         }
 
-        houseData = {
-          address: values.address,
-          year: values.year,
-          buildingSeries: values.buildingSeries,
-          floors: values.floors,
-          imageUrl: values.imageUrl,
-          floorPlans: values.floorPlans.filter((p) => p.url),
-          coordinates: coordinates,
-        };
+        // Fallback to a single point if lookup fails or doesn't return a polygon
+        if (!foundPolygon) {
+           if (pickedCoords) {
+              coordinates = {
+                  type: "Point",
+                  points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+              };
+           } else {
+              // This should not happen if pickedOsmInfo is set
+              throw new Error("Не удалось получить координаты для сохранения.");
+           }
+        }
       } else {
-        toast({
-          variant: "destructive",
-          title: "Ошибка геокодирования",
-          description: "Не удалось найти координаты для указанного адреса.",
+        // Existing logic for editing a house or adding by address string
+        const { OpenStreetMapProvider } = await import("leaflet-geosearch");
+        const provider = new OpenStreetMapProvider({
+          params: { polygon_geojson: 1, addressdetails: 1 },
         });
-        return;
+        const results = await provider.search({ query: values.address });
+
+        if (results && results.length > 0) {
+          const result = results[0];
+          
+          if (
+            result.raw.geojson &&
+            (result.raw.geojson.type === "Polygon" ||
+              result.raw.geojson.type === "MultiPolygon")
+          ) {
+            const polygonCoords =
+              result.raw.geojson.type === "Polygon"
+                ? result.raw.geojson.coordinates[0]
+                : result.raw.geojson.coordinates[0][0];
+            coordinates = {
+              type: "Polygon",
+              points: polygonCoords.map((p: [number, number]) => ({
+                lat: p[1],
+                lng: p[0],
+              })),
+            };
+          } else {
+            coordinates = {
+              type: "Point",
+              points: [{ lat: result.y, lng: result.x }],
+            };
+          }
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Ошибка геокодирования",
+            description: "Не удалось найти координаты для указанного адреса.",
+          });
+          return;
+        }
       }
+
+      houseData = {
+        address: values.address,
+        year: values.year,
+        buildingSeries: values.buildingSeries,
+        floors: values.floors,
+        imageUrl: values.imageUrl,
+        floorPlans: values.floorPlans.filter((p) => p.url),
+        coordinates: coordinates,
+      };
+
     } catch (error: any) {
-      console.error("Geocoding error:", error);
+      console.error("Geocoding/Data processing error:", error);
       toast({
         variant: "destructive",
-        title: "Ошибка геокодирования",
-        description: error.message || "Произошла ошибка при поиске адреса.",
+        title: "Ошибка обработки данных",
+        description: error.message || "Произошла ошибка при подготовке данных для сохранения.",
       });
       return;
     }
@@ -332,3 +399,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
