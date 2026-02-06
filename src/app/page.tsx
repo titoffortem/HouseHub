@@ -114,13 +114,32 @@ export default function Home() {
     let houseData: House | null = null;
 
     try {
-        if (values.inputType === 'coords' && values.lat && values.lng) {
-            const coordinates: Coordinates = {
-                type: "Point",
-                points: [{ lat: values.lat, lng: values.lng }]
-            };
+        const { OpenStreetMapProvider } = await import('leaflet-geosearch');
+        const provider = new OpenStreetMapProvider({ params: { 'polygon_geojson': 1, 'addressdetails': 1 } });
+        const cleanedAddress = `Россия, ${values.address.replace(/[гд]\./g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim()}`;
+        const results = await provider.search({ query: cleanedAddress });
+
+        if (results && results.length > 0) {
+            const result = results[0];
+            let coordinates: Coordinates;
+
+            if (result.raw.geojson && (result.raw.geojson.type === 'Polygon' || result.raw.geojson.type === 'MultiPolygon')) {
+                const polygonCoords = result.raw.geojson.type === 'Polygon' 
+                    ? result.raw.geojson.coordinates[0]
+                    : result.raw.geojson.coordinates[0][0];
+                coordinates = {
+                    type: "Polygon",
+                    points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] }))
+                };
+            } else {
+                coordinates = {
+                    type: "Point",
+                    points: [{ lat: result.y, lng: result.x }]
+                };
+            }
+            
             houseData = {
-                address: values.address, // Already reverse-geocoded
+                address: values.address,
                 year: values.year,
                 buildingSeries: values.buildingSeries,
                 floors: values.floors,
@@ -129,47 +148,12 @@ export default function Home() {
                 coordinates: coordinates,
             };
         } else {
-            const { OpenStreetMapProvider } = await import('leaflet-geosearch');
-            const provider = new OpenStreetMapProvider({ params: { 'polygon_geojson': 1, 'addressdetails': 1 } });
-            const cleanedAddress = `Россия, ${values.address.replace(/[гд]\./g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim()}`;
-            const results = await provider.search({ query: cleanedAddress });
-
-            if (results && results.length > 0) {
-                const result = results[0];
-                let coordinates: Coordinates;
-
-                if (result.raw.geojson && (result.raw.geojson.type === 'Polygon' || result.raw.geojson.type === 'MultiPolygon')) {
-                    const polygonCoords = result.raw.geojson.type === 'Polygon' 
-                        ? result.raw.geojson.coordinates[0]
-                        : result.raw.geojson.coordinates[0][0];
-                    coordinates = {
-                        type: "Polygon",
-                        points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] }))
-                    };
-                } else {
-                    coordinates = {
-                        type: "Point",
-                        points: [{ lat: result.y, lng: result.x }]
-                    };
-                }
-                
-                houseData = {
-                    address: values.address,
-                    year: values.year,
-                    buildingSeries: values.buildingSeries,
-                    floors: values.floors,
-                    imageUrl: values.imageUrl,
-                    floorPlans: values.floorPlans,
-                    coordinates: coordinates,
-                };
-            } else {
-                toast({
-                    variant: "destructive",
-                    title: "Ошибка геокодирования",
-                    description: "Не удалось найти координаты для указанного адреса.",
-                });
-                return; // Stop execution
-            }
+            toast({
+                variant: "destructive",
+                title: "Ошибка геокодирования",
+                description: "Не удалось найти координаты для указанного адреса.",
+            });
+            return; // Stop execution
         }
 
         if (houseData) {
