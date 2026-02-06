@@ -16,7 +16,7 @@ import Image from "next/image";
 import { PropertySearch } from "./property-search";
 
 interface HeaderProps {
-  onSearch: (searchTerm: string, filters: { rooms: number | null; minPrice: number; maxPrice: number }) => void;
+  onSearch: (searchTerm: string) => void;
 }
 
 
