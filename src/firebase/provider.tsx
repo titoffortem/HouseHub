@@ -1,9 +1,10 @@
+
 'use client';
 
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 interface FirebaseProviderProps {
@@ -73,15 +74,6 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       setUserAuthState({ user: null, isUserLoading: false, userError: new Error("Auth service not provided.") });
       return;
     }
-
-    // Call getRedirectResult to handle the redirect flow.
-    // We only need to catch errors here. A successful sign-in will trigger onAuthStateChanged.
-    getRedirectResult(auth)
-      .catch((error) => {
-          console.error("Error from getRedirectResult: ", error);
-          // Set the error, but let onAuthStateChanged handle the loading state
-          setUserAuthState(prevState => ({...prevState, userError: error}));
-      });
 
     // onAuthStateChanged is the primary observer for auth state.
     // It is the single source of truth for the user's sign-in state.
