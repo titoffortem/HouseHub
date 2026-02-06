@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -10,6 +9,16 @@ interface FloorPlanProps {
 }
 
 export function FloorPlan({ src, alt }: FloorPlanProps) {
+  if (!src) {
+    return (
+      <Card className="overflow-hidden relative group rounded-none border-0 border-b">
+        <div className="relative w-full aspect-[4/3] bg-muted flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Нет изображения</p>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="overflow-hidden relative group rounded-none border-0 border-b">
       <div className="relative w-full aspect-[4/3]">
