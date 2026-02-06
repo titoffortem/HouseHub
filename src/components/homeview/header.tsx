@@ -1,5 +1,5 @@
 
-import { LogIn, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { Button } from "../ui/button";
 import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
@@ -91,8 +91,7 @@ export function Header({ onSearch }: HeaderProps) {
           </DropdownMenu>
         ) : (
           <Button onClick={handleLogin}>
-            <LogIn className="mr-2 h-4 w-4" />
-            Вход для администратора
+            Авторизация/Регистрация
           </Button>
         )}
       </div>
