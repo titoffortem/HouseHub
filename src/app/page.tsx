@@ -218,14 +218,15 @@ export default function Home() {
 
         if (results && results.length > 0) {
           const result = results[0];
+          const geojson = (result.raw as any).geojson;
           if (
-            result.raw.geojson &&
-            (result.raw.geojson.type === "Polygon" || result.raw.geojson.type === "MultiPolygon")
+            geojson &&
+            (geojson.type === "Polygon" || geojson.type === "MultiPolygon")
           ) {
             const polygonCoords =
-              result.raw.geojson.type === "Polygon"
-                ? result.raw.geojson.coordinates[0]
-                : result.raw.geojson.coordinates[0][0];
+              geojson.type === "Polygon"
+                ? geojson.coordinates[0]
+                : geojson.coordinates[0][0];
             coordinates = {
               type: "Polygon",
               points: polygonCoords.map((p: [number, number]) => ({
