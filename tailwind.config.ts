@@ -88,15 +88,23 @@ export default {
             height: '0',
           },
         },
-        'disintegrate': {
-          '0%': { transform: 'scale(1)', opacity: '1', filter: 'blur(0)' },
-          '100%': { transform: 'scale(0)', opacity: '0', filter: 'blur(20px)' },
+        'thanos-snap': {
+          '0%': {
+            opacity: '1',
+            transform: 'scale(1) translateX(0px)',
+            filter: 'blur(0px)',
+          },
+          '100%': {
+            opacity: '0',
+            transform: 'scale(0.6) translateX(150px)',
+            filter: 'blur(5px)',
+          },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'disintegrate': 'disintegrate 1s cubic-bezier(0.755, 0.05, 0.855, 0.06) forwards',
+        'thanos-snap': 'thanos-snap 1s ease-in forwards',
       },
     },
   },
