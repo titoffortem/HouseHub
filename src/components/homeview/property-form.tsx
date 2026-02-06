@@ -108,15 +108,19 @@ export function PropertyForm({
   const inputType = watch("inputType");
 
   useEffect(() => {
+    // This effect handles setting initial form data for both editing and creating.
     if (open) {
       if (initialData) {
+        // We are EDITING an existing house.
         reset({
           ...initialData,
-          inputType: 'address', // Always start with address for editing
+          inputType: 'address', // Editing always starts with the address.
           lat: initialData.coordinates.points[0]?.lat,
           lng: initialData.coordinates.points[0]?.lng,
         });
-      } else {
+      } else if (!pickedCoords) {
+        // We are CREATING a new house from scratch (not from a map click).
+        // Reset to default values.
         reset({
           address: "",
           year: new Date().getFullYear(),
@@ -124,18 +128,22 @@ export function PropertyForm({
           floors: 1,
           imageUrl: "",
           floorPlans: [{ url: "" }],
-          inputType: 'address',
+          inputType: 'address', // Default to address input
           lat: undefined,
           lng: undefined,
         });
-        onSetIsPickingLocation(false);
+        onSetIsPickingLocation(false); // Ensure picking mode is off.
       }
+      // If we are opening the form AND `pickedCoords` has a value,
+      // we do nothing here. Another effect will handle the coordinate data.
     }
-  }, [open, initialData, reset, onSetIsPickingLocation]);
+  }, [open, initialData, pickedCoords, reset, onSetIsPickingLocation]);
+
 
   useEffect(() => {
     async function updateAddressFromCoords() {
-      if (pickedCoords && watch('inputType') === 'coords') {
+      // This effect runs when coords are picked from the map.
+      if (pickedCoords && inputType === 'coords') {
         setValue('lat', pickedCoords.lat, { shouldValidate: true });
         setValue('lng', pickedCoords.lng, { shouldValidate: true });
         
@@ -149,18 +157,15 @@ export function PropertyForm({
       }
     }
     updateAddressFromCoords();
-  }, [pickedCoords, setValue, watch, onReverseGeocode]);
+  }, [pickedCoords, inputType, setValue, onReverseGeocode]);
 
 
   const handleFormSubmit = (data: FormValues) => {
     onSubmit(data);
-    onOpenChange(false); // Close dialog on submit
   };
   
   const handleOpenChange = (isOpen: boolean) => {
-    if (!isOpen) {
-      reset();
-    }
+    // Parent component (`page.tsx`) now handles all state resets.
     onOpenChange(isOpen);
   };
 
@@ -185,7 +190,9 @@ export function PropertyForm({
                     <RadioGroup
                         onValueChange={(value) => {
                             field.onChange(value);
-                            onSetIsPickingLocation(value === 'coords' && !initialData);
+                            if (value === 'coords') {
+                                onSetIsPickingLocation(true);
+                            }
                         }}
                         value={field.value}
                         className="flex space-x-4 pt-1"
@@ -213,7 +220,7 @@ export function PropertyForm({
               <div className="space-y-4 rounded-lg border p-4">
                  <Button type="button" variant="outline" onClick={() => onSetIsPickingLocation(true)}>
                     <MapPin className="mr-2 h-4 w-4" />
-                    Указать точку на карте
+                    Указать другую точку
                 </Button>
                 <div className="space-y-1">
                     <Label htmlFor="address-readonly">Найденный адрес</Label>
@@ -298,7 +305,7 @@ export function PropertyForm({
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
             Отмена
           </Button>
-          <Button type="submit" form="property-form">Сохранить изменения</Button>
+          <Button type="submit" form="property-form">Сохранить</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

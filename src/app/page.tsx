@@ -63,20 +63,23 @@ export default function Home() {
   const handleOpenForm = (house?: HouseWithId) => {
     setEditingHouse(house || null);
     setIsFormOpen(true);
+    // Reset picking state when opening the form for a new item or editing
+    setIsPickingLocation(false);
+    setPickedCoords(null);
+    setMarkerPosition(null);
   };
 
   const handleFormClose = () => {
-    if (isHidingFormForPicking) {
-      // This is a programmatic close to allow picking. Don't reset everything.
-      setIsHidingFormForPicking(false); // Reset the flag
-    } else {
-      // This is a user-initiated close (Cancel, X, Esc). Reset everything.
+    setIsFormOpen(false);
+    // If the close was not part of the 'pick on map' flow, reset everything.
+    if (!isHidingFormForPicking) {
       setEditingHouse(null);
       setIsPickingLocation(false);
       setPickedCoords(null);
       setMarkerPosition(null);
     }
-    setIsFormOpen(false);
+    // Always reset the hiding flag after a close operation.
+    setIsHidingFormForPicking(false);
   };
 
   const handleMapClick = (latlng: { lat: number; lng: number }) => {
@@ -89,12 +92,12 @@ export default function Home() {
   };
 
   const handleSetIsPickingLocation = (isPicking: boolean) => {
-    if (isPicking && !isPickingLocation) {
+    setIsPickingLocation(isPicking);
+    if (isPicking) {
       toast({ title: "Укажите точку на карте", description: "Кликните на карте, чтобы выбрать местоположение дома." });
-      setIsHidingFormForPicking(true); // Set the flag before closing
+      setIsHidingFormForPicking(true); // Set flag to distinguish this close
       setIsFormOpen(false); // This will trigger handleFormClose
     }
-    setIsPickingLocation(isPicking);
   };
 
   const handleReverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
@@ -175,6 +178,7 @@ export default function Home() {
           await addDoc(collection(firestore, 'houses'), houseData);
           toast({ title: "Дом успешно добавлен" });
         }
+        // Use the explicit close handler which resets state
         handleFormClose();
       } else {
         toast({
@@ -256,7 +260,7 @@ export default function Home() {
             </Button>
           </div>
         )}
-        {isAdmin && isFormOpen && (
+        {isAdmin && (
           <PropertyForm
             open={isFormOpen}
             onOpenChange={handleFormClose}
