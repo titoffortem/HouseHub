@@ -155,7 +155,7 @@ export default function Home() {
     }
   };
 
-  const handleReverseGeocode = async (
+  const handleReverseGeocode = React.useCallback(async (
     lat: number,
     lng: number
   ): Promise<string | null> => {
@@ -200,7 +200,7 @@ export default function Home() {
       setPickedOsmInfo(null);
       return null;
     }
-  };
+  }, [toast, setPickedOsmInfo]);
 
   const handleFormSubmit = async (values: FormValues) => {
     if (!firestore) return;
