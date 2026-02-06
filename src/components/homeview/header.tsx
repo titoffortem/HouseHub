@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { PropertySearch } from "./property-search";
+import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   onSearch: (searchTerm: string) => void;
@@ -23,11 +24,30 @@ interface HeaderProps {
 export function Header({ onSearch }: HeaderProps) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
+  const { toast } = useToast();
 
   const handleLogin = () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider).catch(error => {
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast({
+          title: "Вход отменен",
+          description: "Окно входа было закрыто. Если это произошло автоматически, проверьте настройки всплывающих окон.",
+        });
+      } else if (error.code === 'auth/popup-blocked') {
+         toast({
+          title: "Всплывающее окно заблокировано",
+          description: "Ваш браузер заблокировал окно для входа. Разрешите всплывающие окна для этого сайта.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Ошибка входа",
+          description: "Произошла неизвестная ошибка. Проверьте консоль для деталей.",
+          variant: "destructive",
+        });
+      }
       console.error("Error signing in with Google: ", error);
     });
   };
