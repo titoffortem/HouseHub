@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
@@ -35,7 +36,17 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <FirebaseClientProvider>
-          {children}
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-1">{children}</main>
+            <footer className="p-4 border-t text-center text-sm text-muted-foreground">
+              <Link
+                href="/privacy"
+                className="hover:text-foreground transition-colors"
+              >
+                Privacy Policy
+              </Link>
+            </footer>
+          </div>
           <Toaster />
         </FirebaseClientProvider>
       </body>
