@@ -12,13 +12,14 @@ import {
   DialogTitle,
   DialogFooter,
   DialogDescription,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HouseWithId } from "@/lib/types";
 import { useEffect } from "react";
-import { Plus, Trash2, MapPin } from "lucide-react";
+import { Plus, Trash2, MapPin, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -96,6 +97,7 @@ export function PropertyForm({
     defaultValues: {
       address: "",
       inputType: "address",
+      imageUrl: "",
       floorPlans: [],
     },
   });
@@ -119,6 +121,7 @@ export function PropertyForm({
         inputType: 'address',
         lat: initialData.coordinates.points[0]?.lat,
         lng: initialData.coordinates.points[0]?.lng,
+        floorPlans: initialData.floorPlans.length > 0 ? initialData.floorPlans : [{ url: "" }],
       });
     } else if (pickedCoords) {
       // CREATING from map click
@@ -160,6 +163,10 @@ export function PropertyForm({
             Заполните данные об объекте. Нажмите "Сохранить", когда закончите.
           </DialogDescription>
         </DialogHeader>
+        <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+        </DialogClose>
         <ScrollArea className="h-[65vh] overflow-y-auto">
           <form id="property-form" onSubmit={handleSubmit(onSubmit)} className="px-6 py-4 space-y-4">
             
