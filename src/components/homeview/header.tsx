@@ -2,7 +2,7 @@
 import { LogOut } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { Button } from "../ui/button";
-import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { signInWithRedirect, GoogleAuthProvider, signOut } from "firebase/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,14 +24,15 @@ export function Header({ onSearch }: HeaderProps) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error signing in with Google: ", error);
-    }
+    // Using redirect instead of popup to avoid issues with popup blockers.
+    signInWithRedirect(auth, provider).catch(error => {
+      // This catch is for immediate errors, e.g., config issues.
+      // The main sign-in result is handled on page load by onAuthStateChanged.
+      console.error("Error initiating Google sign-in redirect: ", error);
+    });
   };
 
   const handleLogout = async () => {
