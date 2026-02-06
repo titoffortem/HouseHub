@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { House, HouseWithId } from "@/lib/types";
+import { HouseWithId } from "@/lib/types";
 import { useEffect } from "react";
 import { Plus, Trash2, MapPin } from "lucide-react";
 import { Separator } from "../ui/separator";
@@ -51,11 +51,11 @@ const formSchema = z.object({
         if (data.lng === undefined || Number.isNaN(data.lng)) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lng'], message: 'Долгота обязательна' });
         }
-        if (!data.address) {
+        if (!data.address || data.address === 'Поиск адреса...') {
             ctx.addIssue({
                 code: z.ZodIssueCode.custom,
                 path: ['address'],
-                message: 'Определите адрес по координатам.',
+                message: 'Дождитесь определения адреса по координатам.',
             });
         }
     }
@@ -108,69 +108,51 @@ export function PropertyForm({
   const inputType = watch("inputType");
 
   useEffect(() => {
-    // This effect handles setting initial form data for both editing and creating.
-    if (open) {
-      if (initialData) {
-        // We are EDITING an existing house.
-        reset({
-          ...initialData,
-          inputType: 'address', // Editing always starts with the address.
-          lat: initialData.coordinates.points[0]?.lat,
-          lng: initialData.coordinates.points[0]?.lng,
-        });
-      } else if (!pickedCoords) {
-        // We are CREATING a new house from scratch (not from a map click).
-        // Reset to default values.
-        reset({
-          address: "",
-          year: new Date().getFullYear(),
-          buildingSeries: "",
-          floors: 1,
-          imageUrl: "",
-          floorPlans: [{ url: "" }],
-          inputType: 'address', // Default to address input
-          lat: undefined,
-          lng: undefined,
-        });
-        onSetIsPickingLocation(false); // Ensure picking mode is off.
-      }
-      // If we are opening the form AND `pickedCoords` has a value,
-      // we do nothing here. Another effect will handle the coordinate data.
+    if (!open) {
+      return; // Do nothing if the form is not open
     }
-  }, [open, initialData, pickedCoords, reset, onSetIsPickingLocation]);
 
-
-  useEffect(() => {
-    async function updateAddressFromCoords() {
-      // This effect runs when coords are picked from the map.
-      if (pickedCoords && inputType === 'coords') {
-        setValue('lat', pickedCoords.lat, { shouldValidate: true });
-        setValue('lng', pickedCoords.lng, { shouldValidate: true });
-        
-        setValue('address', 'Поиск адреса...', { shouldValidate: false });
-        const address = await onReverseGeocode(pickedCoords.lat, pickedCoords.lng);
+    if (initialData) {
+      // EDITING mode
+      reset({
+        ...initialData,
+        inputType: 'address',
+        lat: initialData.coordinates.points[0]?.lat,
+        lng: initialData.coordinates.points[0]?.lng,
+      });
+    } else if (pickedCoords) {
+      // CREATING from map click
+      setValue('inputType', 'coords', { shouldValidate: true }); 
+      setValue('lat', pickedCoords.lat, { shouldValidate: true });
+      setValue('lng', pickedCoords.lng, { shouldValidate: true });
+      
+      setValue('address', 'Поиск адреса...', { shouldValidate: false });
+      onReverseGeocode(pickedCoords.lat, pickedCoords.lng).then(address => {
         if (address) {
           setValue("address", address, { shouldValidate: true });
         } else {
           setValue("address", "", { shouldValidate: true });
         }
-      }
+      });
+    } else {
+      // CREATING from scratch
+      reset({
+        address: "",
+        year: new Date().getFullYear(),
+        buildingSeries: "",
+        floors: 1,
+        imageUrl: "",
+        floorPlans: [{ url: "" }],
+        inputType: 'address',
+        lat: undefined,
+        lng: undefined,
+      });
     }
-    updateAddressFromCoords();
-  }, [pickedCoords, inputType, setValue, onReverseGeocode]);
+  }, [open, initialData, pickedCoords, reset, setValue, onReverseGeocode]);
 
-
-  const handleFormSubmit = (data: FormValues) => {
-    onSubmit(data);
-  };
-  
-  const handleOpenChange = (isOpen: boolean) => {
-    // Parent component (`page.tsx`) now handles all state resets.
-    onOpenChange(isOpen);
-  };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] grid-rows-[auto_1fr_auto] p-0 max-h-[90vh]">
         <DialogHeader className="p-6 pb-0">
           <DialogTitle>{initialData ? "Редактировать дом" : "Добавить новый дом"}</DialogTitle>
@@ -179,7 +161,7 @@ export function PropertyForm({
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[65vh] overflow-y-auto">
-          <form id="property-form" onSubmit={handleSubmit(handleFormSubmit)} className="px-6 py-4 space-y-4">
+          <form id="property-form" onSubmit={handleSubmit(onSubmit)} className="px-6 py-4 space-y-4">
             
             <div className="space-y-2">
               <Label>Способ ввода</Label>

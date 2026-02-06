@@ -7,25 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
 
 interface PropertySearchProps {
-  onSearch: (searchTerm: string, filters: { rooms: number | null, minPrice: number, maxPrice: number }) => void;
+  onSearch: (searchTerm: string) => void;
 }
 
 export function PropertySearch({ onSearch }: PropertySearchProps) {
   const [searchTerm, setSearchTerm] = React.useState("");
-  
-  // These filters are no longer used, but we keep the state in case they are re-added.
-  const [rooms, setRooms] = React.useState<number | null>(null);
-  const [priceRange, setPriceRange] = React.useState<[number, number]>([0, 99999999]);
 
   const handleSearch = () => {
-    onSearch(searchTerm, { rooms, minPrice: priceRange[0], maxPrice: priceRange[1] });
+    onSearch(searchTerm);
   };
   
-  const handleClearFilters = () => {
+  const handleClear = () => {
     setSearchTerm("");
-    setRooms(null);
-    setPriceRange([0, 99999999]);
-    onSearch("", { rooms: null, minPrice: 0, maxPrice: 99999999 });
+    onSearch("");
   }
 
   return (
@@ -45,7 +39,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
         <Button onClick={handleSearch} variant="accent" size="sm">
           Поиск
         </Button>
-         <Button onClick={handleClearFilters} variant="ghost" size="icon" className="h-8 w-8">
+         <Button onClick={handleClear} variant="ghost" size="icon" className="h-8 w-8">
             <X className="h-5 w-5" />
         </Button>
       </div>
