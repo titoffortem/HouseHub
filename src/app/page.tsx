@@ -44,10 +44,13 @@ export default function Home() {
   const [markerPosition, setMarkerPosition] = React.useState<
     [number, number] | null
   >(null);
+  const [pickingToastId, setPickingToastId] = React.useState<
+    string | undefined
+  >();
 
   const { user } = useUser();
   const firestore = useFirestore();
-  const { toast } = useToast();
+  const { toast, dismiss } = useToast();
 
   const adminRoleRef = useMemoFirebase(
     () => (firestore && user ? doc(firestore, "roles_admin", user.uid) : null),
@@ -98,10 +101,18 @@ export default function Home() {
     setIsPickingLocation(false);
     setPickedCoords(null);
     setMarkerPosition(null);
+    if (pickingToastId) {
+      dismiss(pickingToastId);
+      setPickingToastId(undefined);
+    }
   };
 
   const handleMapClick = (latlng: { lat: number; lng: number }) => {
     if (isPickingLocation) {
+      if (pickingToastId) {
+        dismiss(pickingToastId);
+        setPickingToastId(undefined);
+      }
       setPickedCoords(latlng);
       setMarkerPosition([latlng.lat, latlng.lng]);
       setIsPickingLocation(false);
@@ -112,10 +123,11 @@ export default function Home() {
   const handleSetIsPickingLocation = (isPicking: boolean) => {
     setIsPickingLocation(isPicking);
     if (isPicking) {
-      toast({
+      const { id } = toast({
         title: "Укажите точку на карте",
         description: "Кликните на карте, чтобы выбрать местоположение дома.",
       });
+      setPickingToastId(id);
       setIsFormOpen(false); // Hide form to allow map interaction
     }
   };
@@ -198,7 +210,7 @@ export default function Home() {
           buildingSeries: values.buildingSeries,
           floors: values.floors,
           imageUrl: values.imageUrl,
-          floorPlans: values.floorPlans,
+          floorPlans: values.floorPlans.filter((p) => p.url),
           coordinates: coordinates,
         };
       } else {

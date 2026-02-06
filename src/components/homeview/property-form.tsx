@@ -23,7 +23,7 @@ import { Separator } from "../ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const floorPlanSchema = z.object({
-  url: z.string().url("Должен быть действительный URL"),
+  url: z.string().url("Должен быть действительный URL").or(z.literal("")),
 });
 
 const formSchema = z.object({
@@ -31,8 +31,8 @@ const formSchema = z.object({
   year: z.coerce.number().int().min(1800).max(new Date().getFullYear()),
   buildingSeries: z.string().min(1, "Серия здания обязательна"),
   floors: z.coerce.number().int().positive("Должно быть положительное число"),
-  imageUrl: z.string().url("Должен быть действительный URL"),
-  floorPlans: z.array(floorPlanSchema).min(1, "Требуется хотя бы один план этажа"),
+  imageUrl: z.string().url("Должен быть действительный URL").or(z.literal("")),
+  floorPlans: z.array(floorPlanSchema),
   lat: z.coerce.number().optional(),
   lng: z.coerce.number().optional(),
   inputType: z.enum(['address', 'coords']).default('address'),
