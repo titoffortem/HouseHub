@@ -20,6 +20,7 @@ import { FloorPlan } from "./floor-plan";
 import { Button } from "../ui/button";
 import { useState, useEffect } from "react";
 import { FloorPlanViewer } from "./floor-plan-viewer";
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 
 
 interface PropertyDetailsProps {
@@ -28,6 +29,7 @@ interface PropertyDetailsProps {
   onOpenChange: (open: boolean) => void;
   isAdmin: boolean;
   onEdit: (house: HouseWithId) => void;
+  onDelete: (houseId: string) => void;
 }
 
 const DetailItem = ({
@@ -54,8 +56,10 @@ export function PropertyDetails({
   onOpenChange,
   isAdmin,
   onEdit,
+  onDelete,
 }: PropertyDetailsProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     // Close the viewer if the main sheet is closed
@@ -65,6 +69,12 @@ export function PropertyDetails({
   }, [open]);
 
   if (!house) return null;
+
+  const handleConfirmDelete = () => {
+    onDelete(house.id);
+    setIsDeleteDialogOpen(false);
+    onOpenChange(false); // Close the details sheet after deletion
+  };
 
   return (
     <>
@@ -123,6 +133,13 @@ export function PropertyDetails({
                   >
                     <Pencil className="mr-2 h-4 w-4" /> Редактировать
                   </Button>
+                   <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => setIsDeleteDialogOpen(true)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" /> Удалить
+                  </Button>
                 </div>
               </SheetFooter>
             </>
@@ -134,6 +151,13 @@ export function PropertyDetails({
           house={house}
           open={isViewerOpen}
           onOpenChange={setIsViewerOpen}
+        />
+      )}
+       {isAdmin && house && (
+        <DeleteConfirmationDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </>

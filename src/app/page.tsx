@@ -142,10 +142,6 @@ export default function Home() {
       return;
     }
 
-    if (!window.confirm("Вы уверены, что хотите удалить этот дом?")) {
-      return;
-    }
-
     try {
       const houseRef = doc(firestore, "houses", houseId);
       await deleteDoc(houseRef);
@@ -187,6 +183,7 @@ export default function Home() {
           onOpenChange={handleDeselectHouse}
           isAdmin={!!user}
           onEdit={handleOpenForm}
+          onDelete={handleDeleteHouse}
         />
         {user && (
           <div className="absolute bottom-4 right-4 z-10">
