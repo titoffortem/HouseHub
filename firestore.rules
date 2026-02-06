@@ -16,9 +16,12 @@ service cloud.firestore {
     }
     
     match /roles_admin/{userId} {
-      // No client should be able to read or write to the admin roles directly.
-      // These roles should be managed from the Firebase Console.
-      allow read, write: if false;
+      // Allow a user to read their own admin status document to check for admin privileges.
+      allow get: if request.auth != null && request.auth.uid == userId;
+
+      // Disallow listing the collection or writing to it from the client.
+      // Admin roles must be managed from the Firebase Console for security.
+      allow list, write: if false;
     }
   }
 }
