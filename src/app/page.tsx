@@ -6,7 +6,7 @@ import { House, HouseWithId, Coordinates } from "@/lib/types";
 import { Header } from "@/components/homeview/header";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -24,6 +24,11 @@ export default function Home() {
   const firestore = useFirestore();
   const { toast } = useToast();
 
+  // Check for admin role by looking for a document in /roles_admin/{userId}
+  const adminRoleRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'roles_admin', user.uid) : null, [firestore, user]);
+  const { data: adminRole, isLoading: isAdminLoading } = useDoc(adminRoleRef);
+  const isAdmin = !!adminRole;
+
   const housesCollection = useMemoFirebase(() => firestore ? collection(firestore, "houses"): null, [firestore]);
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
 
@@ -31,7 +36,7 @@ export default function Home() {
     if (!allHouses) return;
 
     if (!searchTerm) {
-      setFilteredHouses(null); // Reset filter, null means all are shown normally
+      setFilteredHouses(null);
       return;
     }
 
@@ -181,18 +186,18 @@ export default function Home() {
           house={selectedHouse}
           open={!!selectedHouse}
           onOpenChange={handleDeselectHouse}
-          isAdmin={!!user}
+          isAdmin={isAdmin}
           onEdit={handleOpenForm}
           onDelete={handleDeleteHouse}
         />
-        {user && (
+        {isAdmin && (
           <div className="absolute bottom-4 right-4 z-10">
             <Button size="lg" onClick={() => handleOpenForm()}>
               <Plus className="mr-2 h-5 w-5" /> Добавить дом
             </Button>
           </div>
         )}
-        {user && isFormOpen && (
+        {isAdmin && isFormOpen && (
           <PropertyForm
             open={isFormOpen}
             onOpenChange={handleFormClose}
