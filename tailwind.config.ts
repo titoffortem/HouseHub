@@ -88,23 +88,10 @@ export default {
             height: '0',
           },
         },
-        'thanos-snap': {
-          '0%': {
-            opacity: '1',
-            transform: 'scale(1) translateX(0px)',
-            filter: 'blur(0px)',
-          },
-          '100%': {
-            opacity: '0',
-            transform: 'scale(0.6) translateX(150px)',
-            filter: 'blur(5px)',
-          },
-        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'thanos-snap': 'thanos-snap 1s ease-in forwards',
       },
     },
   },
