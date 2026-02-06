@@ -19,6 +19,9 @@ export default function Home() {
   const [selectedHouse, setSelectedHouse] = React.useState<HouseWithId | null>(null);
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingHouse, setEditingHouse] = React.useState<HouseWithId | null>(null);
+  const [isPickingLocation, setIsPickingLocation] = React.useState(false);
+  const [pickedCoords, setPickedCoords] = React.useState<{lat: number, lng: number} | null>(null);
+  const [markerPosition, setMarkerPosition] = React.useState<[number, number] | null>(null);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -63,6 +66,24 @@ export default function Home() {
   const handleFormClose = () => {
     setIsFormOpen(false);
     setEditingHouse(null);
+    setIsPickingLocation(false);
+    setPickedCoords(null);
+    setMarkerPosition(null);
+  };
+
+  const handleMapClick = (latlng: { lat: number; lng: number }) => {
+    if (isPickingLocation) {
+      setPickedCoords(latlng);
+      setMarkerPosition([latlng.lat, latlng.lng]);
+      setIsPickingLocation(false); 
+    }
+  };
+
+  const handleSetIsPickingLocation = (isPicking: boolean) => {
+    if (isPicking && !isPickingLocation) { 
+        toast({ title: "Укажите точку на карте", description: "Кликните на карте, чтобы выбрать местоположение дома." });
+    }
+    setIsPickingLocation(isPicking);
   };
 
   const handleReverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
@@ -204,6 +225,9 @@ export default function Home() {
             houses={allHouses || []}
             highlightedHouses={filteredHouses}
             onSelectHouse={handleSelectHouse}
+            onMapClick={handleMapClick}
+            markerPosition={markerPosition}
+            isPickingLocation={isPickingLocation}
           />
         )}
         <PropertyDetails
@@ -228,6 +252,8 @@ export default function Home() {
             onSubmit={handleFormSubmit}
             onReverseGeocode={handleReverseGeocode}
             initialData={editingHouse}
+            onSetIsPickingLocation={handleSetIsPickingLocation}
+            pickedCoords={pickedCoords}
           />
         )}
       </main>

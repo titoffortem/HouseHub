@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { House, HouseWithId } from "@/lib/types";
 import { useEffect } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, MapPin } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
@@ -70,6 +70,8 @@ interface PropertyFormProps {
   onSubmit: (values: FormValues) => void;
   onReverseGeocode: (lat: number, lng: number) => Promise<string | null>;
   initialData?: HouseWithId | null;
+  onSetIsPickingLocation: (isPicking: boolean) => void;
+  pickedCoords: { lat: number; lng: number } | null;
 }
 
 export function PropertyForm({
@@ -78,6 +80,8 @@ export function PropertyForm({
   onSubmit,
   onReverseGeocode,
   initialData,
+  onSetIsPickingLocation,
+  pickedCoords
 }: PropertyFormProps) {
   const {
     register,
@@ -85,7 +89,6 @@ export function PropertyForm({
     handleSubmit,
     reset,
     watch,
-    getValues,
     setValue,
     formState: { errors },
   } = useForm<FormValues>({
@@ -125,9 +128,29 @@ export function PropertyForm({
           lat: undefined,
           lng: undefined,
         });
+        onSetIsPickingLocation(false);
       }
     }
-  }, [open, initialData, reset]);
+  }, [open, initialData, reset, onSetIsPickingLocation]);
+
+  useEffect(() => {
+    async function updateAddressFromCoords() {
+      if (pickedCoords && watch('inputType') === 'coords') {
+        setValue('lat', pickedCoords.lat, { shouldValidate: true });
+        setValue('lng', pickedCoords.lng, { shouldValidate: true });
+        
+        setValue('address', 'Поиск адреса...', { shouldValidate: false });
+        const address = await onReverseGeocode(pickedCoords.lat, pickedCoords.lng);
+        if (address) {
+          setValue("address", address, { shouldValidate: true });
+        } else {
+          setValue("address", "", { shouldValidate: true });
+        }
+      }
+    }
+    updateAddressFromCoords();
+  }, [pickedCoords, setValue, watch, onReverseGeocode]);
+
 
   const handleFormSubmit = (data: FormValues) => {
     onSubmit(data);
@@ -139,20 +162,6 @@ export function PropertyForm({
       reset();
     }
     onOpenChange(isOpen);
-  };
-
-  const handleReverseGeocodeClick = async () => {
-    const lat = getValues("lat");
-    const lng = getValues("lng");
-    if (lat !== undefined && lng !== undefined) {
-      setValue('address', 'Поиск адреса...', { shouldValidate: false });
-      const address = await onReverseGeocode(lat, lng);
-      if (address) {
-        setValue("address", address, { shouldValidate: true });
-      } else {
-        setValue("address", "", { shouldValidate: true });
-      }
-    }
   };
 
   return (
@@ -174,16 +183,19 @@ export function PropertyForm({
                 name="inputType"
                 render={({ field }) => (
                     <RadioGroup
-                        onValueChange={field.onChange}
+                        onValueChange={(value) => {
+                            field.onChange(value);
+                            onSetIsPickingLocation(value === 'coords' && !initialData);
+                        }}
                         value={field.value}
                         className="flex space-x-4 pt-1"
                     >
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="address" id="r1" />
+                            <RadioGroupItem value="address" id="r1" disabled={!!initialData}/>
                             <Label htmlFor="r1" className="font-normal">По адресу</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="coords" id="r2" />
+                            <RadioGroupItem value="coords" id="r2" disabled={!!initialData}/>
                             <Label htmlFor="r2" className="font-normal">По координатам</Label>
                         </div>
                     </RadioGroup>
@@ -199,24 +211,18 @@ export function PropertyForm({
               </div>
             ) : (
               <div className="space-y-4 rounded-lg border p-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <Label htmlFor="lat">Широта</Label>
-                        <Input id="lat" type="number" step="any" {...register("lat")} placeholder="e.g. 57.626" />
-                        {errors.lat && <p className="text-destructive text-sm">{errors.lat.message}</p>}
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="lng">Долгота</Label>
-                        <Input id="lng" type="number" step="any" {...register("lng")} placeholder="e.g. 39.897" />
-                        {errors.lng && <p className="text-destructive text-sm">{errors.lng.message}</p>}
-                    </div>
-                </div>
-                 <Button type="button" variant="outline" size="sm" onClick={handleReverseGeocodeClick}>Найти адрес по координатам</Button>
+                 <Button type="button" variant="outline" onClick={() => onSetIsPickingLocation(true)}>
+                    <MapPin className="mr-2 h-4 w-4" />
+                    Указать точку на карте
+                </Button>
                 <div className="space-y-1">
                     <Label htmlFor="address-readonly">Найденный адрес</Label>
-                    <Input id="address-readonly" {...register("address")} readOnly className="bg-muted"/>
+                    <Input id="address-readonly" {...register("address")} readOnly className="bg-muted" placeholder="Адрес появится здесь после выбора точки"/>
                     {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
                 </div>
+                {/* Hidden inputs for validation */}
+                <input type="hidden" {...register("lat")} />
+                <input type="hidden" {...register("lng")} />
               </div>
             )}
              <div className="grid grid-cols-2 gap-4">

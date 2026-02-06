@@ -22,6 +22,9 @@ interface MapComponentProps {
   houses: HouseWithId[];
   highlightedHouses: HouseWithId[] | null;
   onSelectHouse: (house: HouseWithId) => void;
+  onMapClick?: (latlng: { lat: number; lng: number }) => void;
+  markerPosition?: [number, number] | null;
+  isPickingLocation?: boolean;
 }
 
 const defaultStyle = {
@@ -44,11 +47,15 @@ export default function MapComponent({
   houses,
   highlightedHouses,
   onSelectHouse,
+  onMapClick,
+  markerPosition,
+  isPickingLocation,
 }: MapComponentProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const layersRef = useRef<L.LayerGroup | null>(null);
   const isInitialLoad = useRef(true);
+  const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
@@ -60,14 +67,48 @@ export default function MapComponent({
       }).addTo(mapInstance.current);
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
     }
-
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
-        mapInstance.current = null;
-      }
-    };
   }, []);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    const clickHandler = (e: L.LeafletMouseEvent) => {
+        if (isPickingLocation && onMapClick) {
+            onMapClick(e.latlng);
+        }
+    };
+    
+    map.on('click', clickHandler);
+    
+    return () => {
+        map.off('click', clickHandler);
+    };
+  }, [isPickingLocation, onMapClick]);
+
+  useEffect(() => {
+    if (mapRef.current) {
+        mapRef.current.style.cursor = isPickingLocation ? 'crosshair' : '';
+    }
+  }, [isPickingLocation]);
+
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    // Remove previous marker
+    if (markerRef.current) {
+        markerRef.current.remove();
+        markerRef.current = null;
+    }
+
+    // Add new marker
+    if (markerPosition) {
+        markerRef.current = L.marker(markerPosition).addTo(map);
+        map.panTo(markerPosition);
+    }
+  }, [markerPosition]);
+
 
   useEffect(() => {
     const layers = layersRef.current;
@@ -102,8 +143,11 @@ export default function MapComponent({
         }
       
       if (layer) {
-        layer.on('click', () => {
-            onSelectHouse(house);
+        layer.on('click', (e) => {
+            if (!isPickingLocation) {
+              L.DomEvent.stopPropagation(e);
+              onSelectHouse(house);
+            }
         });
         layers.addLayer(layer);
       }
@@ -136,7 +180,7 @@ export default function MapComponent({
     }
 
 
-  }, [houses, highlightedHouses, onSelectHouse]);
+  }, [houses, highlightedHouses, onSelectHouse, isPickingLocation]);
   
   return <div ref={mapRef} className="h-full w-full z-0" />;
 }
