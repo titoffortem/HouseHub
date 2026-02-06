@@ -45,7 +45,7 @@ export function Header({ onSearch }: HeaderProps) {
         const hostname = window.location.hostname;
         toast({
           title: "Окно входа было закрыто",
-          description: `Это может быть вызвано проблемой с конфигурацией проекта. Проверьте в консоли Firebase: 1) В разделе Authentication > Settings > Authorized Domains должен быть добавлен домен "${hostname}". 2) Убедитесь, что ваш OAuth Consent Screen в Google Cloud настроен.`,
+          description: `Это может быть вызвано проблемой с конфигурацией. Проверьте: 1) Домен "${hostname}" добавлен в Authorized Domains в Firebase. 2) Настроен OAuth Consent Screen в Google Cloud. 3) Если статус публикации "Testing", ваш email добавлен в список тестовых пользователей.`,
           variant: "destructive",
           duration: 20000,
         });
