@@ -65,6 +65,26 @@ export default function Home() {
   );
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
 
+  React.useEffect(() => {
+    // If a house is selected and the list of all houses is available
+    if (selectedHouse && allHouses) {
+      // Find the latest version of the selected house in the main list
+      const updatedVersion = allHouses.find((h) => h.id === selectedHouse.id);
+
+      // If the house still exists in the list (it might have been deleted)
+      if (updatedVersion) {
+        // To prevent an infinite loop, only update the state if the data has actually changed.
+        if (JSON.stringify(selectedHouse) !== JSON.stringify(updatedVersion)) {
+          setSelectedHouse(updatedVersion);
+        }
+      } else {
+        // If the house is not in the list anymore, it means it was deleted.
+        // Deselect it to close the details panel.
+        setSelectedHouse(null);
+      }
+    }
+  }, [allHouses, selectedHouse]);
+
   const handleSearch = (searchTerm: string) => {
     if (!allHouses) return;
 
