@@ -116,8 +116,7 @@ export default function Home() {
     try {
         const { OpenStreetMapProvider } = await import('leaflet-geosearch');
         const provider = new OpenStreetMapProvider({ params: { 'polygon_geojson': 1, 'addressdetails': 1 } });
-        const cleanedAddress = `Россия, ${values.address.replace(/[гд]\./g, '').replace(/,/g, ' ').replace(/\s+/g, ' ').trim()}`;
-        const results = await provider.search({ query: cleanedAddress });
+        const results = await provider.search({ query: values.address });
 
         if (results && results.length > 0) {
             const result = results[0];
