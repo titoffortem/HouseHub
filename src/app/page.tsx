@@ -174,9 +174,13 @@ export default function Home() {
         const city = address.city || address.town || address.village || "";
         const road = address.road || "";
         const houseNumber = address.house_number || "";
+        
+        // Strip street types like "улица", "проспект" for better geocoding later
+        const streetTypes = /улица|проспект|переулок|площадь|шоссе|бульвар|набережная|проезд/gi;
+        const cleanedRoad = road.replace(streetTypes, "").trim();
 
         // We need at least a road and house number to consider it a valid house address
-        const formattedAddress = (road && houseNumber) ? [city, road, houseNumber].filter(Boolean).join(" ") : null;
+        const formattedAddress = (cleanedRoad && houseNumber) ? [city, cleanedRoad, houseNumber].filter(Boolean).join(" ") : null;
         
         // Now, decide whether to get the polygon for the found object.
         // We only want a polygon if it's explicitly a building and not a POI or a large area.
