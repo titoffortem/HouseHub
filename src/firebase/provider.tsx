@@ -3,7 +3,7 @@
 import React, { DependencyList, createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Firestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged, getRedirectResult } from 'firebase/auth';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener'
 
 interface FirebaseProviderProps {
@@ -74,8 +74,17 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       return;
     }
 
-    setUserAuthState({ user: null, isUserLoading: true, userError: null }); // Reset on auth instance change
+    // This handles the result from a redirect sign-in flow.
+    // It's called on page load to check if the user is returning from a sign-in attempt.
+    getRedirectResult(auth)
+      .catch((error) => {
+          // This can happen if the user closes the sign-in window. We can log it but it's not always a critical app error.
+          console.error("Error from getRedirectResult: ", error);
+          setUserAuthState(prevState => ({...prevState, userError: error, isUserLoading: false}));
+      });
 
+    // onAuthStateChanged is the primary observer for auth state.
+    // It fires on sign-in, sign-out, and on initial page load with the persisted user state.
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => { // Auth state determined
