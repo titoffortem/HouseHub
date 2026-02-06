@@ -30,22 +30,28 @@ export function Header({ onSearch }: HeaderProps) {
     if (!auth) return;
     const provider = new GoogleAuthProvider();
     signInWithPopup(auth, provider).catch(error => {
-      if (error.code === 'auth/popup-closed-by-user') {
+      // Check for the most common issues first.
+      if (error.code === 'auth/popup-blocked') {
         toast({
-          title: "Вход отменен",
-          description: "Окно входа было закрыто. Если это произошло автоматически, проверьте настройки всплывающих окон.",
-        });
-      } else if (error.code === 'auth/popup-blocked') {
-         toast({
           title: "Всплывающее окно заблокировано",
-          description: "Ваш браузер заблокировал окно для входа. Разрешите всплывающие окна для этого сайта.",
+          description: "Браузер заблокировал окно входа. Разрешите всплывающие окна для этого сайта и попробуйте снова.",
           variant: "destructive",
+          duration: 10000,
+        });
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        toast({
+          title: "Окно входа было закрыто",
+          description: "Если окно закрылось само, убедитесь, что домен этого сайта добавлен в 'Authorized domains' в настройках Authentication в консоли Firebase.",
+          variant: "destructive",
+          duration: 10000,
         });
       } else {
+        // A more generic error, possibly related to config.
         toast({
-          title: "Ошибка входа",
-          description: "Произошла неизвестная ошибка. Проверьте консоль для деталей.",
+          title: "Ошибка аутентификации",
+          description: "Не удалось войти. Возможная причина: домен сайта не авторизован в Firebase. Проверьте консоль для деталей.",
           variant: "destructive",
+          duration: 10000,
         });
       }
       console.error("Error signing in with Google: ", error);
