@@ -160,39 +160,56 @@ export default function Home() {
     lng: number
   ): Promise<string | null> => {
     try {
+      // Add addressdetails=1 to get address components
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&accept-language=ru`
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=ru`
       );
       if (!response.ok) {
         throw new Error("Reverse geocoding request failed");
       }
       const data = await response.json();
-      if (data && data.display_name) {
-        // Avoid getting polygons for large area relations like universities or entire landuse areas.
-        const isLargeAreaRelation = data.type === 'university' || data.type === 'college' || data.type === 'school' || data.category === 'landuse';
 
-        // We only want to get polygon info if it's NOT a 'node' and NOT a large area.
-        if (data.osm_type && data.osm_id && data.osm_type !== 'node' && !isLargeAreaRelation) {
+      if (data && data.address) {
+        const { address } = data;
+        const city = address.city || address.town || address.village || "";
+        const road = address.road || "";
+        const houseNumber = address.house_number || "";
+
+        // We need at least a road and house number to consider it a valid house address
+        const formattedAddress = (road && houseNumber) ? [city, road, houseNumber].filter(Boolean).join(" ") : null;
+        
+        // Now, decide whether to get the polygon for the found object.
+        // We only want a polygon if it's explicitly a building and not a POI or a large area.
+        const isBuilding = data.category === 'building';
+        
+        // Only try to get a polygon if the returned object is a building and is not just a point ('node').
+        if (isBuilding && data.osm_type !== 'node' && data.osm_id) {
           setPickedOsmInfo({ osm_type: data.osm_type, osm_id: data.osm_id });
         } else {
-          // If it's a node or a large area, we don't want to look up its polygon.
-          // We'll just fall back to using the point.
+          // If it's a shop, organization, or just a point on the map, we don't fetch a polygon.
           setPickedOsmInfo(null);
-          toast({
-            variant: "destructive",
-            title: "Контур здания не найден",
-            description: "Пожалуйста, кликните точнее на здание. Будет сохранена только точка.",
-          });
+          if (formattedAddress) { // Only show toast if we found an address but no polygon
+              toast({
+                title: "Контур здания не найден",
+                description: "Сохранена будет только точка на карте.",
+              });
+          }
         }
-        return data.display_name;
+
+        if (formattedAddress) {
+            return formattedAddress;
+        }
       }
+      
+      // Fallback if we couldn't construct a proper address
       toast({
         variant: "destructive",
-        title: "Адрес не найден",
-        description: "Не удалось найти адрес для этих координат.",
+        title: "Точный адрес дома не найден",
+        description: "Пожалуйста, кликните точнее на здание. Будет сохранена только точка.",
       });
-      setPickedOsmInfo(null);
-      return null;
+      setPickedOsmInfo(null); // Ensure no polygon is fetched
+      return data.display_name || null; // Return full name as a last resort
+
     } catch (error) {
       console.error("Reverse geocoding error:", error);
       toast({
@@ -247,7 +264,7 @@ export default function Home() {
         }
   
         // 2. If no precise polygon was found, but we clicked the map, use the clicked point.
-        // This is the fallback when reverse geocoding gives a "node" or a large area.
+        // This is the fallback when reverse geocoding gives a "node" or a POI without a building polygon.
         if (!foundPolygon && pickedCoords) {
           coordinates = {
             type: "Point",
