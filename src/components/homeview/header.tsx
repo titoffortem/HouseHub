@@ -39,12 +39,14 @@ export function Header({ onSearch }: HeaderProps) {
           duration: 10000,
         });
       } else if (error.code === 'auth/popup-closed-by-user') {
+        const hostname = window.location.hostname;
         toast({
           title: "Окно входа было закрыто",
-          description: "Если окно закрылось само, убедитесь, что домен этого сайта добавлен в 'Authorized domains' в настройках Authentication в консоли Firebase.",
+          description: `Это может произойти, если домен "${hostname}" не добавлен в список авторизованных доменов в Firebase. Проверьте настройки Authentication в консоли Firebase.`,
           variant: "destructive",
-          duration: 10000,
+          duration: 15000,
         });
+        console.error(`Popup closed by user. This can happen if the domain "${hostname}" is not in the Firebase Auth authorized domains list.`);
       } else {
         // A more generic error, possibly related to config.
         toast({
