@@ -161,7 +161,7 @@ export default function Home() {
   ): Promise<string | null> => {
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru`
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&accept-language=ru`
       );
       if (!response.ok) {
         throw new Error("Reverse geocoding request failed");
@@ -200,76 +200,73 @@ export default function Home() {
       setPickedOsmInfo(null);
       return null;
     }
-  }, [toast, setPickedOsmInfo]);
+  }, [toast]);
 
   const handleFormSubmit = async (values: FormValues) => {
     if (!firestore) return;
-
+  
     let houseData: House;
-
+  
     try {
-      let coordinates: Coordinates;
-
-      // If adding a NEW house and we have OSM info from a map click, use that to get a precise polygon.
-      if (editingHouse === null && pickedOsmInfo) {
-        const osmTypeChar = pickedOsmInfo.osm_type.charAt(0).toUpperCase();
-        const osmId = `${osmTypeChar}${pickedOsmInfo.osm_id}`;
-        
-        const lookupResponse = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osmId}&format=jsonv2&polygon_geojson=1`);
-        
-        if (!lookupResponse.ok) {
-            throw new Error('OSM lookup request failed');
-        }
-        const lookupData = await lookupResponse.json();
-
+      let coordinates: Coordinates | undefined;
+  
+      // --- Logic for ADDING a new house ---
+      if (editingHouse === null) {
         let foundPolygon = false;
-        if (lookupData && lookupData.length > 0 && lookupData[0].geojson) {
-            const result = lookupData[0];
-            if (result.geojson.type === "Polygon") {
+        // 1. Try to get a precise polygon using OSM info from the map click
+        if (pickedOsmInfo) {
+          const osmTypeChar = pickedOsmInfo.osm_type.charAt(0).toUpperCase();
+          const osmId = `${osmTypeChar}${pickedOsmInfo.osm_id}`;
+  
+          const lookupResponse = await fetch(`https://nominatim.openstreetmap.org/lookup?osm_ids=${osmId}&format=jsonv2&polygon_geojson=1`);
+  
+          if (lookupResponse.ok) {
+            const lookupData = await lookupResponse.json();
+            if (lookupData && lookupData.length > 0 && lookupData[0].geojson) {
+              const result = lookupData[0];
+              if (result.geojson.type === "Polygon") {
                 const polygonCoords = result.geojson.coordinates[0];
                 coordinates = {
-                    type: "Polygon",
-                    points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
+                  type: "Polygon",
+                  points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
                 };
                 foundPolygon = true;
-            } else if (result.geojson.type === "MultiPolygon") {
-                // Take the first, usually largest, polygon of a multipolygon
-                const polygonCoords = result.geojson.coordinates[0][0]; 
+              } else if (result.geojson.type === "MultiPolygon") {
+                const polygonCoords = result.geojson.coordinates[0][0];
                 coordinates = {
-                    type: "Polygon",
-                    points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
+                  type: "Polygon",
+                  points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })),
                 };
                 foundPolygon = true;
+              }
             }
+          }
         }
-
-        // Fallback to a single point if lookup fails or doesn't return a polygon
-        if (!foundPolygon) {
-           if (pickedCoords) {
-              coordinates = {
-                  type: "Point",
-                  points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
-              };
-           } else {
-              // This should not happen if pickedOsmInfo is set
-              throw new Error("Не удалось получить координаты для сохранения.");
-           }
+  
+        // 2. If no polygon, but we clicked the map, use the clicked point.
+        // This is the fallback when reverse geocoding gives a "node" or lookup fails.
+        if (!foundPolygon && pickedCoords) {
+          coordinates = {
+            type: "Point",
+            points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+          };
         }
-      } else {
-        // Existing logic for editing a house or adding by address string
+      }
+  
+      // --- Logic for EDITING or ADDING BY ADDRESS (if coordinates are still undefined) ---
+      if (!coordinates) {
         const { OpenStreetMapProvider } = await import("leaflet-geosearch");
         const provider = new OpenStreetMapProvider({
           params: { polygon_geojson: 1, addressdetails: 1 },
         });
         const results = await provider.search({ query: values.address });
-
+  
         if (results && results.length > 0) {
           const result = results[0];
-          
+  
           if (
             result.raw.geojson &&
-            (result.raw.geojson.type === "Polygon" ||
-              result.raw.geojson.type === "MultiPolygon")
+            (result.raw.geojson.type === "Polygon" || result.raw.geojson.type === "MultiPolygon")
           ) {
             const polygonCoords =
               result.raw.geojson.type === "Polygon"
@@ -297,7 +294,17 @@ export default function Home() {
           return;
         }
       }
-
+  
+      // Final check for coordinates before proceeding
+      if (!coordinates) {
+        toast({
+            variant: "destructive",
+            title: "Ошибка координат",
+            description: "Не удалось определить координаты для дома. Попробуйте еще раз.",
+        });
+        return;
+      }
+  
       houseData = {
         address: values.address,
         year: values.year,
@@ -307,7 +314,7 @@ export default function Home() {
         floorPlans: values.floorPlans.filter((p) => p.url),
         coordinates: coordinates,
       };
-
+  
     } catch (error: any) {
       console.error("Geocoding/Data processing error:", error);
       toast({
@@ -317,7 +324,7 @@ export default function Home() {
       });
       return;
     }
-
+  
     if (editingHouse) {
       const houseRef = doc(firestore, "houses", editingHouse.id);
       updateDocumentNonBlocking(houseRef, houseData as any);
@@ -399,5 +406,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
