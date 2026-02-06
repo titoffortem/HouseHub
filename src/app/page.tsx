@@ -168,11 +168,15 @@ export default function Home() {
       }
       const data = await response.json();
       if (data && data.display_name) {
-        // We want buildings, which are usually 'way' or 'relation'.
-        // If it's just a 'node', it's likely not a building outline we can use.
-        if (data.osm_type && data.osm_id && data.osm_type !== 'node') {
+        // Avoid getting polygons for large area relations like universities or entire landuse areas.
+        const isLargeAreaRelation = data.type === 'university' || data.type === 'college' || data.type === 'school' || data.category === 'landuse';
+
+        // We only want to get polygon info if it's NOT a 'node' and NOT a large area.
+        if (data.osm_type && data.osm_id && data.osm_type !== 'node' && !isLargeAreaRelation) {
           setPickedOsmInfo({ osm_type: data.osm_type, osm_id: data.osm_id });
         } else {
+          // If it's a node or a large area, we don't want to look up its polygon.
+          // We'll just fall back to using the point.
           setPickedOsmInfo(null);
           toast({
             variant: "destructive",
@@ -206,10 +210,9 @@ export default function Home() {
     if (!firestore) return;
   
     let houseData: House;
+    let coordinates: Coordinates | undefined;
   
     try {
-      let coordinates: Coordinates | undefined;
-  
       // --- Logic for ADDING a new house ---
       if (editingHouse === null) {
         let foundPolygon = false;
@@ -243,8 +246,8 @@ export default function Home() {
           }
         }
   
-        // 2. If no polygon, but we clicked the map, use the clicked point.
-        // This is the fallback when reverse geocoding gives a "node" or lookup fails.
+        // 2. If no precise polygon was found, but we clicked the map, use the clicked point.
+        // This is the fallback when reverse geocoding gives a "node" or a large area.
         if (!foundPolygon && pickedCoords) {
           coordinates = {
             type: "Point",
@@ -253,7 +256,13 @@ export default function Home() {
         }
       }
   
-      // --- Logic for EDITING or ADDING BY ADDRESS (if coordinates are still undefined) ---
+      // --- Logic for EDITING or ADDING BY MANUAL ADDRESS ---
+      // This block is only reached if coordinates are still undefined.
+      // This happens when:
+      // a) Editing an existing house.
+      // b) Adding a new house by typing an address (pickedCoords is null).
+      // It will NOT be reached when adding by map click, because `coordinates` will
+      // have been set to either a Polygon or a Point in the block above.
       if (!coordinates) {
         const { OpenStreetMapProvider } = await import("leaflet-geosearch");
         const provider = new OpenStreetMapProvider({
@@ -293,16 +302,6 @@ export default function Home() {
           });
           return;
         }
-      }
-  
-      // Final check for coordinates before proceeding
-      if (!coordinates) {
-        toast({
-            variant: "destructive",
-            title: "Ошибка координат",
-            description: "Не удалось определить координаты для дома. Попробуйте еще раз.",
-        });
-        return;
       }
   
       houseData = {
