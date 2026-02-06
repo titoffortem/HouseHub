@@ -6,32 +6,60 @@ import { House, HouseWithId, Coordinates } from "@/lib/types";
 import { Header } from "@/components/homeview/header";
 import { PropertyDetails } from "@/components/homeview/property-details";
 import Map from "@/components/homeview/map-provider";
-import { useCollection, useFirestore, useUser, useMemoFirebase, useDoc } from "@/firebase";
-import { collection, doc, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import {
+  useCollection,
+  useFirestore,
+  useUser,
+  useMemoFirebase,
+  useDoc,
+  addDocumentNonBlocking,
+  updateDocumentNonBlocking,
+  deleteDocumentNonBlocking,
+} from "@/firebase";
+import { collection, doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { PropertyForm, type FormValues } from "@/components/homeview/property-form";
+import {
+  PropertyForm,
+  type FormValues,
+} from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
 
-
 export default function Home() {
-  const [filteredHouses, setFilteredHouses] = React.useState<HouseWithId[] | null>(null);
-  const [selectedHouse, setSelectedHouse] = React.useState<HouseWithId | null>(null);
+  const [filteredHouses, setFilteredHouses] = React.useState<
+    HouseWithId[] | null
+  >(null);
+  const [selectedHouse, setSelectedHouse] = React.useState<HouseWithId | null>(
+    null
+  );
   const [isFormOpen, setIsFormOpen] = React.useState(false);
-  const [editingHouse, setEditingHouse] = React.useState<HouseWithId | null>(null);
+  const [editingHouse, setEditingHouse] = React.useState<HouseWithId | null>(
+    null
+  );
   const [isPickingLocation, setIsPickingLocation] = React.useState(false);
-  const [pickedCoords, setPickedCoords] = React.useState<{lat: number, lng: number} | null>(null);
-  const [markerPosition, setMarkerPosition] = React.useState<[number, number] | null>(null);
+  const [pickedCoords, setPickedCoords] = React.useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+  const [markerPosition, setMarkerPosition] = React.useState<
+    [number, number] | null
+  >(null);
 
   const { user } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
 
-  const adminRoleRef = useMemoFirebase(() => (firestore && user) ? doc(firestore, 'roles_admin', user.uid) : null, [firestore, user]);
+  const adminRoleRef = useMemoFirebase(
+    () => (firestore && user ? doc(firestore, "roles_admin", user.uid) : null),
+    [firestore, user]
+  );
   const { data: adminRole } = useDoc(adminRoleRef);
   const isAdmin = !!adminRole;
 
-  const housesCollection = useMemoFirebase(() => firestore ? collection(firestore, "houses"): null, [firestore]);
+  const housesCollection = useMemoFirebase(
+    () => (firestore ? collection(firestore, "houses") : null),
+    [firestore]
+  );
   const { data: allHouses, isLoading } = useCollection<House>(housesCollection);
 
   const handleSearch = (searchTerm: string) => {
@@ -84,100 +112,126 @@ export default function Home() {
   const handleSetIsPickingLocation = (isPicking: boolean) => {
     setIsPickingLocation(isPicking);
     if (isPicking) {
-      toast({ title: "Укажите точку на карте", description: "Кликните на карте, чтобы выбрать местоположение дома." });
+      toast({
+        title: "Укажите точку на карте",
+        description: "Кликните на карте, чтобы выбрать местоположение дома.",
+      });
       setIsFormOpen(false); // Hide form to allow map interaction
     }
   };
 
-  const handleReverseGeocode = async (lat: number, lng: number): Promise<string | null> => {
+  const handleReverseGeocode = async (
+    lat: number,
+    lng: number
+  ): Promise<string | null> => {
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru`);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ru`
+      );
       if (!response.ok) {
-        throw new Error('Reverse geocoding request failed');
+        throw new Error("Reverse geocoding request failed");
       }
       const data = await response.json();
       if (data && data.display_name) {
         return data.display_name;
       }
-      toast({ variant: "destructive", title: "Адрес не найден", description: "Не удалось найти адрес для этих координат." });
+      toast({
+        variant: "destructive",
+        title: "Адрес не найден",
+        description: "Не удалось найти адрес для этих координат.",
+      });
       return null;
     } catch (error) {
       console.error("Reverse geocoding error:", error);
-      toast({ variant: "destructive", title: "Ошибка определения адреса", description: "Произошла ошибка при запросе к сервису геокодирования." });
+      toast({
+        variant: "destructive",
+        title: "Ошибка определения адреса",
+        description:
+          "Произошла ошибка при запросе к сервису геокодирования.",
+      });
       return null;
     }
   };
 
- const handleFormSubmit = async (values: FormValues) => {
+  const handleFormSubmit = async (values: FormValues) => {
     if (!firestore) return;
 
-    let houseData: House | null = null;
+    let houseData: House;
 
     try {
-        const { OpenStreetMapProvider } = await import('leaflet-geosearch');
-        const provider = new OpenStreetMapProvider({ params: { 'polygon_geojson': 1, 'addressdetails': 1 } });
-        const results = await provider.search({ query: values.address });
+      const { OpenStreetMapProvider } = await import("leaflet-geosearch");
+      const provider = new OpenStreetMapProvider({
+        params: { polygon_geojson: 1, addressdetails: 1 },
+      });
+      const results = await provider.search({ query: values.address });
 
-        if (results && results.length > 0) {
-            const result = results[0];
-            let coordinates: Coordinates;
+      if (results && results.length > 0) {
+        const result = results[0];
+        let coordinates: Coordinates;
 
-            if (result.raw.geojson && (result.raw.geojson.type === 'Polygon' || result.raw.geojson.type === 'MultiPolygon')) {
-                const polygonCoords = result.raw.geojson.type === 'Polygon' 
-                    ? result.raw.geojson.coordinates[0]
-                    : result.raw.geojson.coordinates[0][0];
-                coordinates = {
-                    type: "Polygon",
-                    points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] }))
-                };
-            } else {
-                coordinates = {
-                    type: "Point",
-                    points: [{ lat: result.y, lng: result.x }]
-                };
-            }
-            
-            houseData = {
-                address: values.address,
-                year: values.year,
-                buildingSeries: values.buildingSeries,
-                floors: values.floors,
-                imageUrl: values.imageUrl,
-                floorPlans: values.floorPlans,
-                coordinates: coordinates,
-            };
+        if (
+          result.raw.geojson &&
+          (result.raw.geojson.type === "Polygon" ||
+            result.raw.geojson.type === "MultiPolygon")
+        ) {
+          const polygonCoords =
+            result.raw.geojson.type === "Polygon"
+              ? result.raw.geojson.coordinates[0]
+              : result.raw.geojson.coordinates[0][0];
+          coordinates = {
+            type: "Polygon",
+            points: polygonCoords.map((p: [number, number]) => ({
+              lat: p[1],
+              lng: p[0],
+            })),
+          };
         } else {
-            toast({
-                variant: "destructive",
-                title: "Ошибка геокодирования",
-                description: "Не удалось найти координаты для указанного адреса.",
-            });
-            return; // Stop execution
+          coordinates = {
+            type: "Point",
+            points: [{ lat: result.y, lng: result.x }],
+          };
         }
 
-        if (houseData) {
-             if (editingHouse) {
-                const houseRef = doc(firestore, 'houses', editingHouse.id);
-                await updateDoc(houseRef, houseData as any);
-                toast({ title: "Данные о доме успешно обновлены" });
-            } else {
-                await addDoc(collection(firestore, 'houses'), houseData);
-                toast({ title: "Дом успешно добавлен" });
-            }
-            handleFormClose(); // Close and reset state
-        }
-       
-    } catch (error: any) {
-        console.error("Firestore error:", error);
+        houseData = {
+          address: values.address,
+          year: values.year,
+          buildingSeries: values.buildingSeries,
+          floors: values.floors,
+          imageUrl: values.imageUrl,
+          floorPlans: values.floorPlans,
+          coordinates: coordinates,
+        };
+      } else {
         toast({
-            variant: "destructive",
-            title: "Ошибка сохранения дома",
-            description: error.message || "Произошла ошибка. Проверьте свои права доступа.",
+          variant: "destructive",
+          title: "Ошибка геокодирования",
+          description: "Не удалось найти координаты для указанного адреса.",
         });
+        return;
+      }
+    } catch (error: any) {
+      console.error("Geocoding error:", error);
+      toast({
+        variant: "destructive",
+        title: "Ошибка геокодирования",
+        description: error.message || "Произошла ошибка при поиске адреса.",
+      });
+      return;
     }
+
+    if (editingHouse) {
+      const houseRef = doc(firestore, "houses", editingHouse.id);
+      updateDocumentNonBlocking(houseRef, houseData as any);
+      toast({ title: "Данные о доме успешно обновлены" });
+    } else {
+      const housesCollectionRef = collection(firestore, "houses");
+      addDocumentNonBlocking(housesCollectionRef, houseData);
+      toast({ title: "Дом успешно добавлен" });
+    }
+    handleFormClose();
   };
 
-  const handleDeleteHouse = async (houseId: string) => {
+  const handleDeleteHouse = (houseId: string) => {
     if (!firestore || !user) {
       toast({
         variant: "destructive",
@@ -187,34 +241,25 @@ export default function Home() {
       return;
     }
 
-    try {
-      const houseRef = doc(firestore, "houses", houseId);
-      await deleteDoc(houseRef);
+    const houseRef = doc(firestore, "houses", houseId);
+    deleteDocumentNonBlocking(houseRef);
 
-      if (selectedHouse?.id === houseId) {
-        setSelectedHouse(null);
-      }
-      toast({
-        title: "Дом успешно удален",
-      });
-    } catch (error: any) {
-      console.error("Error deleting document: ", error);
-      toast({
-        variant: "destructive",
-        title: "Ошибка удаления дома",
-        description:
-          error.message || "Не удалось удалить дом. Проверьте права доступа.",
-      });
+    if (selectedHouse?.id === houseId) {
+      setSelectedHouse(null);
     }
+    toast({
+      title: "Дом успешно удален",
+    });
   };
-
 
   return (
     <div className="relative min-h-screen w-full bg-background">
       <Header onSearch={(searchTerm) => handleSearch(searchTerm)} />
       <main className="relative h-[calc(100vh-4rem)] w-full">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">Загрузка домов...</div>
+          <div className="flex items-center justify-center h-full">
+            Загрузка домов...
+          </div>
         ) : (
           <Map
             houses={allHouses || []}
