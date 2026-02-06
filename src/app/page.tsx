@@ -22,6 +22,8 @@ export default function Home() {
   const [isPickingLocation, setIsPickingLocation] = React.useState(false);
   const [pickedCoords, setPickedCoords] = React.useState<{lat: number, lng: number} | null>(null);
   const [markerPosition, setMarkerPosition] = React.useState<[number, number] | null>(null);
+  const [isHidingFormForPicking, setIsHidingFormForPicking] = React.useState(false);
+
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -64,24 +66,33 @@ export default function Home() {
   };
 
   const handleFormClose = () => {
+    if (isHidingFormForPicking) {
+      // This is a programmatic close to allow picking. Don't reset everything.
+      setIsHidingFormForPicking(false); // Reset the flag
+    } else {
+      // This is a user-initiated close (Cancel, X, Esc). Reset everything.
+      setEditingHouse(null);
+      setIsPickingLocation(false);
+      setPickedCoords(null);
+      setMarkerPosition(null);
+    }
     setIsFormOpen(false);
-    setEditingHouse(null);
-    setIsPickingLocation(false);
-    setPickedCoords(null);
-    setMarkerPosition(null);
   };
 
   const handleMapClick = (latlng: { lat: number; lng: number }) => {
     if (isPickingLocation) {
       setPickedCoords(latlng);
       setMarkerPosition([latlng.lat, latlng.lng]);
-      setIsPickingLocation(false); 
+      setIsPickingLocation(false);
+      setIsFormOpen(true); // Re-open form
     }
   };
 
   const handleSetIsPickingLocation = (isPicking: boolean) => {
-    if (isPicking && !isPickingLocation) { 
-        toast({ title: "Укажите точку на карте", description: "Кликните на карте, чтобы выбрать местоположение дома." });
+    if (isPicking && !isPickingLocation) {
+      toast({ title: "Укажите точку на карте", description: "Кликните на карте, чтобы выбрать местоположение дома." });
+      setIsHidingFormForPicking(true); // Set the flag before closing
+      setIsFormOpen(false); // This will trigger handleFormClose
     }
     setIsPickingLocation(isPicking);
   };
