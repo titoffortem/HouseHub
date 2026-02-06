@@ -192,7 +192,7 @@ export function PropertyForm({
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="coords" id="r2" disabled={!!initialData}/>
-                            <Label htmlFor="r2" className="font-normal">По координатам</Label>
+                            <Label htmlFor="r2" className="font-normal">По карте</Label>
                         </div>
                     </RadioGroup>
                 )}

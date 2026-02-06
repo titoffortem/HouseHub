@@ -54,7 +54,6 @@ export default function MapComponent({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<L.Map | null>(null);
   const layersRef = useRef<L.LayerGroup | null>(null);
-  const isInitialLoad = useRef(true);
   const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
@@ -164,19 +163,6 @@ export default function MapComponent({
         if (bounds.isValid()) {
             mapInstance.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
         }
-    } else if (isInitialLoad.current && houses.length > 0 && mapInstance.current) {
-        // On initial load, fit all houses
-        const allHousesBounds: L.LatLng[] = [];
-        houses.forEach(house => {
-            house.coordinates.points.forEach(p => {
-                allHousesBounds.push(L.latLng(p.lat, p.lng));
-            });
-        });
-        const bounds = new L.LatLngBounds(allHousesBounds);
-        if (bounds.isValid()) {
-            mapInstance.current.fitBounds(bounds, { padding: [50, 50] });
-        }
-        isInitialLoad.current = false;
     }
 
 
