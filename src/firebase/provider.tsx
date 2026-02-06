@@ -74,20 +74,22 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
       return;
     }
 
-    // This handles the result from a redirect sign-in flow.
-    // It's called on page load to check if the user is returning from a sign-in attempt.
+    // Call getRedirectResult to handle the redirect flow.
+    // We only need to catch errors here. A successful sign-in will trigger onAuthStateChanged.
     getRedirectResult(auth)
       .catch((error) => {
-          // This can happen if the user closes the sign-in window. We can log it but it's not always a critical app error.
           console.error("Error from getRedirectResult: ", error);
-          setUserAuthState(prevState => ({...prevState, userError: error, isUserLoading: false}));
+          // Set the error, but let onAuthStateChanged handle the loading state
+          setUserAuthState(prevState => ({...prevState, userError: error}));
       });
 
     // onAuthStateChanged is the primary observer for auth state.
-    // It fires on sign-in, sign-out, and on initial page load with the persisted user state.
+    // It is the single source of truth for the user's sign-in state.
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => { // Auth state determined
+        // This callback fires on initial load, and on any auth state change.
+        // It correctly sets the user and indicates that loading is finished.
         setUserAuthState({ user: firebaseUser, isUserLoading: false, userError: null });
       },
       (error) => { // Auth listener error
