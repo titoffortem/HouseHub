@@ -60,12 +60,10 @@ export default function MapComponent({
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
-        maxZoom: 20
+      L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=22.07.20-0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
+        // No official attribution for these tiles
       }).addTo(mapInstance.current);
-
+      
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
     }
   }, []);
@@ -103,9 +101,10 @@ export default function MapComponent({
         markerRef.current = null;
     }
 
-    // Add new marker
+    // Add new marker and bring it to front
     if (markerPosition) {
         markerRef.current = L.marker(markerPosition).addTo(map);
+        markerRef.current.bringToFront();
         map.panTo(markerPosition);
     }
   }, [markerPosition]);
@@ -120,7 +119,7 @@ export default function MapComponent({
     const highlightedIds = highlightedHouses ? new Set(highlightedHouses.map(h => h.id)) : null;
 
     houses.forEach(house => {
-        let layer: L.Layer | null = null;
+        let layer: L.Layer & { bringToFront?: () => void } | null = null;
         const isHighlighted = highlightedIds ? highlightedIds.has(house.id) : false;
         
         const style = isHighlighted ? highlightedStyle : defaultStyle;
@@ -149,6 +148,10 @@ export default function MapComponent({
             }
         });
         layers.addLayer(layer);
+        // This is the important part: ensure each polygon/circle is on top.
+        if (layer.bringToFront) {
+            layer.bringToFront();
+        }
       }
     });
     
