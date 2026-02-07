@@ -152,6 +152,9 @@ export default function MapComponent({
       }
     });
 
+    // Bring the entire layer group to the front to ensure it's on top of the tile layer.
+    layers.bringToFront();
+
     if (highlightedHouses && highlightedHouses.length > 0 && mapInstance.current) {
         const boundsPoints: L.LatLng[] = [];
         highlightedHouses.forEach(house => {
