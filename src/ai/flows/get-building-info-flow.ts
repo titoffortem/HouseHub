@@ -36,9 +36,9 @@ const getBuildingInfoPrompt = ai.definePrompt({
   name: 'getBuildingInfoPrompt',
   input: {schema: GetBuildingInfoInputSchema},
   output: {schema: GetBuildingInfoOutputSchema},
-  prompt: `You are an expert real estate data analyst. Your task is to find information about a building at a specific address by searching ONLY the website dom.mingkh.ru.
+  prompt: `You are an expert real estate data analyst. Your task is to find information about a building in the city of **Yaroslavl (Ярославль)** by searching ONLY the website dom.mingkh.ru.
 
-You MUST find the page for the exact address provided. Do not use information for similar addresses.
+You MUST find the page for the exact address provided within Yaroslavl. For example, if the address is "Ленина 10", your search query should effectively be "Ярославль, Ленина 10". Do not use information for similar addresses or for addresses in other cities.
 
 Address to search for: {{{address}}}
 
@@ -46,7 +46,7 @@ From the building's page on dom.mingkh.ru, extract the following information:
 1.  "Год постройки" (Year of construction). Return it as a number in the 'year' field.
 2.  "Серия, тип постройки" (Series, type of construction). Return it as a string in the 'series' field.
 
-If you cannot find the exact address on the site, or if the information is missing, do not guess or make up data. Return the fields as undefined.`,
+If you cannot find the exact address on the site for Yaroslavl, or if the information is missing, do not guess or make up data. Return the fields as undefined.`,
 });
 
 
