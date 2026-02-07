@@ -127,7 +127,7 @@ export function Header({ onSearch }: HeaderProps) {
           </DropdownMenu>
         ) : (
           <Button onClick={handleLogin}>
-            Авторизация/Регистрация
+            Вход для администратора
           </Button>
         )}
       </div>
