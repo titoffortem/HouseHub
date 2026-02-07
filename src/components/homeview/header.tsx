@@ -17,7 +17,7 @@ import { PropertySearch } from "./property-search";
 import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
-  onSearch: (searchTerm: string) => void;
+  onSearch: (searchTerm: string, searchType: string) => void;
 }
 
 

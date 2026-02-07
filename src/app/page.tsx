@@ -85,7 +85,7 @@ export default function Home() {
     }
   }, [allHouses, selectedHouse]);
 
-  const handleSearch = (searchTerm: string) => {
+  const handleSearch = (searchTerm: string, searchType: string) => {
     if (!allHouses) return;
 
     if (!searchTerm) {
@@ -93,9 +93,20 @@ export default function Home() {
       return;
     }
 
-    const results = allHouses.filter((house) =>
-      house.address.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+
+    const results = allHouses.filter((house) => {
+      switch (searchType) {
+        case "year":
+          return house.year.toString() === searchTerm.trim();
+        case "buildingSeries":
+          return house.buildingSeries
+            .toLowerCase()
+            .includes(lowercasedSearchTerm);
+        default: // address
+          return house.address.toLowerCase().includes(lowercasedSearchTerm);
+      }
+    });
 
     setFilteredHouses(results);
   };
