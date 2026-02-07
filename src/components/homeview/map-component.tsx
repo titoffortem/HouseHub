@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useRef } from 'react';
@@ -60,8 +59,8 @@ export default function MapComponent({
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
 
-      L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=22.07.20-0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
-        // No official attribution for these tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapInstance.current);
       
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
@@ -148,8 +147,8 @@ export default function MapComponent({
             }
         });
         layers.addLayer(layer);
-        // This is the important part: ensure each polygon/circle is on top.
-        if (layer.bringToFront) {
+        
+        if (isHighlighted && layer.bringToFront) {
             layer.bringToFront();
         }
       }
