@@ -59,11 +59,22 @@ export default function MapComponent({
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
+
+      // Create panes for layer ordering. This is a robust way to control layer stacking.
+      mapInstance.current.createPane('tilePane');
+      mapInstance.current.getPane('tilePane')!.style.zIndex = '250'; // Background
+      mapInstance.current.createPane('vectorPane');
+      mapInstance.current.getPane('vectorPane')!.style.zIndex = '450'; // Middle-ground for houses
+      mapInstance.current.createPane('markerPane');
+      mapInstance.current.getPane('markerPane')!.style.zIndex = '650'; // Foreground for interactive markers
+
        L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=2.23.0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
         attribution:
           '&copy; <a href="https://yandex.ru/maps/">Yandex</a>',
         maxZoom: 20,
+        pane: 'tilePane' // Assign tile layer to the background pane
       }).addTo(mapInstance.current);
+
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
     }
   }, []);
@@ -101,9 +112,9 @@ export default function MapComponent({
         markerRef.current = null;
     }
 
-    // Add new marker
+    // Add new marker to the dedicated foreground pane
     if (markerPosition) {
-        markerRef.current = L.marker(markerPosition).addTo(map);
+        markerRef.current = L.marker(markerPosition, { pane: 'markerPane' }).addTo(map);
         map.panTo(markerPosition);
     }
   }, [markerPosition]);
@@ -124,20 +135,19 @@ export default function MapComponent({
         const style = isHighlighted ? highlightedStyle : defaultStyle;
 
         const { coordinates } = house;
+        
+        // Ensure all house vector layers are in the dedicated 'vectorPane'.
+        const options = { ...style, pane: 'vectorPane' };
 
         if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
             const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
-            layer = L.polygon(latLngs, style);
+            layer = L.polygon(latLngs, options);
         } else if (coordinates.type === 'Point' && coordinates.points.length > 0) {
             const point = coordinates.points[0];
             const latLng = [point.lat, point.lng] as [number, number];
             layer = L.circleMarker(latLng, {
+                ...options,
                 radius: 6,
-                fillColor: style.fillColor,
-                color: style.color,
-                weight: style.weight,
-                opacity: style.opacity,
-                fillOpacity: style.fillOpacity
             });
         }
       
@@ -152,9 +162,8 @@ export default function MapComponent({
       }
     });
 
-    // Bring the entire layer group to the front to ensure it's on top of the tile layer.
-    layers.bringToFront();
-
+    // This call is no longer needed because panes now manage the z-index.
+    
     if (highlightedHouses && highlightedHouses.length > 0 && mapInstance.current) {
         const boundsPoints: L.LatLng[] = [];
         highlightedHouses.forEach(house => {
