@@ -28,10 +28,10 @@ interface MapComponentProps {
 }
 
 const defaultStyle = {
-  color: "hsl(var(--primary))",
+  color: "black",
   weight: 1.5,
   opacity: 0.8,
-  fillColor: "hsl(var(--primary))",
+  fillColor: "black",
   fillOpacity: 0.2,
 };
 
