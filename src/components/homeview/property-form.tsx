@@ -17,11 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HouseWithId } from "@/lib/types";
-import { useEffect, useState } from "react";
-import { Plus, Trash2, MapPin, X, Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { Plus, Trash2, MapPin, X } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { getBuildingInfo } from "@/ai/flows/get-building-info-flow";
 
 const floorPlanSchema = z.object({
   url: z.string().url("Должен быть действительный URL").or(z.literal("")),
@@ -84,7 +83,6 @@ export function PropertyForm({
   onSetIsPickingLocation,
   pickedCoords
 }: PropertyFormProps) {
-  const [isFetchingInfo, setIsFetchingInfo] = useState(false);
   const {
     register,
     control,
@@ -154,28 +152,6 @@ export function PropertyForm({
     }
   }, [open, initialData, pickedCoords, reset, setValue, onReverseGeocode]);
 
-  const handleAddressBlur = async (event: React.FocusEvent<HTMLInputElement>) => {
-    const address = event.target.value;
-    // Only fetch if creating a new house and address is provided.
-    if (!initialData && address && address.trim() !== '') {
-        setIsFetchingInfo(true);
-        try {
-            const buildingInfo = await getBuildingInfo({ address });
-            if (buildingInfo?.year) {
-                setValue('year', buildingInfo.year, { shouldValidate: true });
-            }
-            if (buildingInfo?.series) {
-                setValue('buildingSeries', buildingInfo.series, { shouldValidate: true });
-            }
-        } catch (error) {
-            console.error("Error fetching building info:", error);
-        } finally {
-            setIsFetchingInfo(false);
-        }
-    }
-  };
-
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] grid-rows-[auto_1fr_auto] p-0 max-h-[90vh]">
@@ -224,7 +200,7 @@ export function PropertyForm({
             {inputType === 'address' ? (
               <div className="space-y-1">
                 <Label htmlFor="address">Адрес</Label>
-                <Input id="address" {...register("address")} onBlur={handleAddressBlur} />
+                <Input id="address" {...register("address")} />
                 {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
               </div>
             ) : (
@@ -246,10 +222,7 @@ export function PropertyForm({
              <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
                     <Label htmlFor="year">Год постройки</Label>
-                    <div className="relative flex items-center">
-                      <Input id="year" type="number" {...register("year")} />
-                      {isFetchingInfo && <Loader2 className="absolute right-2.5 h-4 w-4 animate-spin text-muted-foreground" />}
-                    </div>
+                    <Input id="year" type="number" {...register("year")} />
                     {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
                 </div>
                 <div className="space-y-1">
