@@ -59,9 +59,9 @@ export default function MapComponent({
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
-       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+       L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=2.23.0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
         attribution:
-          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          '&copy; <a href="https://yandex.ru/maps/">Yandex</a>',
         maxZoom: 20,
       }).addTo(mapInstance.current);
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
