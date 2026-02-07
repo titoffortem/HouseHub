@@ -356,7 +356,7 @@ export default function Home() {
         />
         {isAdmin && (
           <div className="absolute bottom-4 right-4 z-10">
-            <Button size="lg" onClick={() => handleOpenForm()}>
+            <Button size="lg" variant="accent" onClick={() => handleOpenForm()}>
               <Plus className="mr-2 h-5 w-5" /> Добавить дом
             </Button>
           </div>
