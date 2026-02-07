@@ -69,7 +69,9 @@ export default function AdminLoginPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <div className="flex flex-col items-center gap-6 p-8 border rounded-lg shadow-md bg-card max-w-sm w-full">
-             <Image src="https://sun9-8.userapi.com/s/v1/ig2/rmZGJAqMA5y7TrFTYnndwLrcU7wb72mnvv6Z2LUgpsMdCNL097Kn9gvW9w__rsBMEY20A4Tt-ecLIPEq4qCWPtPx.jpg?quality=95&as=32x10,48x15,72x22,108x34,160x50,240x75,360x112,448x140&from=bu&cs=448x0" alt="Логотип HouseHub" width={140} height={40} />
+            <div className="overflow-hidden">
+              <Image src="https://sun9-8.userapi.com/s/v1/ig2/rmZGJAqMA5y7TrFTYnndwLrcU7wb72mnvv6Z2LUgpsMdCNL097Kn9gvW9w__rsBMEY20A4Tt-ecLIPEq4qCWPtPx.jpg?quality=95&as=32x10,48x15,72x22,108x34,160x50,240x75,360x112,448x140&from=bu&cs=448x0" alt="Логотип HouseHub" width={140} height={40} className="relative -left-0.5" />
+            </div>
             <h1 className="text-2xl font-headline text-center">Вход для администратора</h1>
             <p className="text-sm text-center text-muted-foreground">
                 Эта страница предназначена только для зарегистрированных администраторов.
