@@ -60,19 +60,10 @@ export default function MapComponent({
     if (mapRef.current && !mapInstance.current) {
       mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
 
-      // Create panes for layer ordering. This is a robust way to control layer stacking.
-      mapInstance.current.createPane('tilePane');
-      mapInstance.current.getPane('tilePane')!.style.zIndex = '250'; // Background
-      mapInstance.current.createPane('vectorPane');
-      mapInstance.current.getPane('vectorPane')!.style.zIndex = '450'; // Middle-ground for houses
-      mapInstance.current.createPane('markerPane');
-      mapInstance.current.getPane('markerPane')!.style.zIndex = '650'; // Foreground for interactive markers
-
-       L.tileLayer('https://core-renderer-tiles.maps.yandex.net/tiles?l=map&v=2.23.0&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
-        attribution:
-          '&copy; <a href="https://yandex.ru/maps/">Yandex</a>',
-        maxZoom: 20,
-        pane: 'tilePane' // Assign tile layer to the background pane
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
       }).addTo(mapInstance.current);
 
       layersRef.current = L.layerGroup().addTo(mapInstance.current);
@@ -112,9 +103,9 @@ export default function MapComponent({
         markerRef.current = null;
     }
 
-    // Add new marker to the dedicated foreground pane
+    // Add new marker
     if (markerPosition) {
-        markerRef.current = L.marker(markerPosition, { pane: 'markerPane' }).addTo(map);
+        markerRef.current = L.marker(markerPosition).addTo(map);
         map.panTo(markerPosition);
     }
   }, [markerPosition]);
@@ -136,8 +127,7 @@ export default function MapComponent({
 
         const { coordinates } = house;
         
-        // Ensure all house vector layers are in the dedicated 'vectorPane'.
-        const options = { ...style, pane: 'vectorPane' };
+        const options = { ...style };
 
         if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
             const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
@@ -161,8 +151,6 @@ export default function MapComponent({
         layers.addLayer(layer);
       }
     });
-
-    // This call is no longer needed because panes now manage the z-index.
     
     if (highlightedHouses && highlightedHouses.length > 0 && mapInstance.current) {
         const boundsPoints: L.LatLng[] = [];
