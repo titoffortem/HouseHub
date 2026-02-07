@@ -2,7 +2,7 @@
 import { LogOut } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { Button } from "../ui/button";
-import { signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { PropertySearch } from "./property-search";
-import { useToast } from "@/hooks/use-toast";
 
 interface HeaderProps {
   onSearch: (searchTerm: string, searchType: string) => void;
@@ -24,44 +23,6 @@ interface HeaderProps {
 export function Header({ onSearch }: HeaderProps) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
-  const { toast } = useToast();
-
-  const handleLogin = async () => {
-    if (!auth) return;
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      // onAuthStateChanged will handle the successful login
-    } catch (error: any) {
-      // Check for the most common issues first.
-      if (error.code === 'auth/popup-blocked') {
-        toast({
-          title: "Всплывающее окно заблокировано",
-          description: "Браузер заблокировал окно входа. Разрешите всплывающие окна для этого сайта и попробуйте снова.",
-          variant: "destructive",
-          duration: 10000,
-        });
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        const hostname = window.location.hostname;
-        toast({
-          title: "Окно входа было закрыто",
-          description: `Это может быть вызвано проблемой с конфигурацией. Проверьте: 1) Домен "${hostname}" добавлен в Authorized Domains в Firebase. 2) Настроен OAuth Consent Screen в Google Cloud. 3) Если статус публикации "Testing", ваш email добавлен в список тестовых пользователей.`,
-          variant: "destructive",
-          duration: 20000,
-        });
-        console.error(`Popup closed by user. This can happen if the domain "${hostname}" is not in the Firebase Auth authorized domains list, or if there's a GCP OAuth configuration issue.`);
-      } else {
-        // A more generic error, possibly related to config.
-        toast({
-          title: "Ошибка аутентификации",
-          description: "Не удалось войти. Возможная причина: домен сайта не авторизован в Firebase. Проверьте консоль для деталей.",
-          variant: "destructive",
-          duration: 10000,
-        });
-        console.error("Error signing in with Google: ", error);
-      }
-    }
-  };
 
   const handleLogout = async () => {
     if (!auth) return;
@@ -85,7 +46,7 @@ export function Header({ onSearch }: HeaderProps) {
       <div>
         {isUserLoading ? (
           <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
-        ) : user ? (
+        ) : user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -125,10 +86,6 @@ export function Header({ onSearch }: HeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        ) : (
-          <Button onClick={handleLogin}>
-            Вход для администратора
-          </Button>
         )}
       </div>
     </header>
