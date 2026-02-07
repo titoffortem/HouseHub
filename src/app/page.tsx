@@ -273,6 +273,16 @@ export default function Home() {
         return;
       }
       
+      // Save the location to localStorage for the next visit
+      if (coordinates && coordinates.points.length > 0) {
+        const lastLocation = {
+          lat: coordinates.points[0].lat,
+          lng: coordinates.points[0].lng,
+          zoom: 13, // A reasonable default zoom level
+        };
+        localStorage.setItem('lastHouseLocation', JSON.stringify(lastLocation));
+      }
+      
       // --- Phase 2: Assemble and save data ---
       houseData = {
         address: values.address,

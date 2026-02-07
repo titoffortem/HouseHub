@@ -57,7 +57,24 @@ export default function MapComponent({
 
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
-      const map = L.map(mapRef.current).setView([57.626, 39.897], 13);
+      let initialView: [number, number] = [57.626, 39.897];
+      let initialZoom = 13;
+
+      try {
+        const savedLocation = localStorage.getItem('lastHouseLocation');
+        if (savedLocation) {
+          const { lat, lng, zoom } = JSON.parse(savedLocation);
+          if (lat && lng) {
+            initialView = [lat, lng];
+            initialZoom = zoom || 13;
+          }
+        }
+      } catch (error) {
+        console.error("Failed to parse last location from localStorage", error);
+        // Fallback to default view
+      }
+
+      const map = L.map(mapRef.current).setView(initialView, initialZoom);
       mapInstance.current = map;
 
       // Create panes to control layer stacking
