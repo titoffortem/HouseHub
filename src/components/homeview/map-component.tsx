@@ -57,13 +57,25 @@ export default function MapComponent({
 
   useEffect(() => {
     if (mapRef.current && !mapInstance.current) {
-      mapInstance.current = L.map(mapRef.current).setView([57.626, 39.897], 13);
+      const map = L.map(mapRef.current).setView([57.626, 39.897], 13);
+      mapInstance.current = map;
+
+      // Create panes to control layer stacking
+      map.createPane('tilePane');
+      map.getPane('tilePane')!.style.zIndex = '100';
+
+      map.createPane('polygonsPane');
+      map.getPane('polygonsPane')!.style.zIndex = '200';
+      
+      map.createPane('topMarkerPane');
+      map.getPane('topMarkerPane')!.style.zIndex = '300';
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(mapInstance.current);
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        pane: 'tilePane'
+      }).addTo(map);
       
-      layersRef.current = L.layerGroup().addTo(mapInstance.current);
+      layersRef.current = L.layerGroup([], { pane: 'polygonsPane' }).addTo(map);
     }
   }, []);
 
@@ -100,10 +112,9 @@ export default function MapComponent({
         markerRef.current = null;
     }
 
-    // Add new marker and bring it to front
+    // Add new marker and assign it to the top-most pane.
     if (markerPosition) {
-        markerRef.current = L.marker(markerPosition).addTo(map);
-        markerRef.current.bringToFront();
+        markerRef.current = L.marker(markerPosition, { pane: 'topMarkerPane' }).addTo(map);
         map.panTo(markerPosition);
     }
   }, [markerPosition]);
@@ -118,13 +129,14 @@ export default function MapComponent({
     const highlightedIds = highlightedHouses ? new Set(highlightedHouses.map(h => h.id)) : null;
 
     houses.forEach(house => {
-        let layer: L.Layer & { bringToFront?: () => void } | null = null;
+        let layer: (L.Layer & { bringToFront?: () => void }) | null = null;
         const isHighlighted = highlightedIds ? highlightedIds.has(house.id) : false;
         
         const style = isHighlighted ? highlightedStyle : defaultStyle;
 
         const { coordinates } = house;
         
+        // The pane is already set on the layersRef group, so individual layers inherit it.
         const options = { ...style };
 
         if (coordinates.type === 'Polygon' && coordinates.points.length > 0) {
