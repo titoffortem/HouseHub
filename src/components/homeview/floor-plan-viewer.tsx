@@ -82,6 +82,7 @@ export function FloorPlanViewer({
                         variant="outline"
                         className="aspect-square h-auto w-auto text-lg bg-transparent text-white hover:bg-white/20"
                         onClick={() => setSelectedFloorIndex(index)}
+                        disabled={!plan.url}
                       >
                         {index + 1}
                       </Button>

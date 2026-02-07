@@ -290,7 +290,7 @@ export default function Home() {
         buildingSeries: values.buildingSeries,
         floors: values.floors,
         imageUrl: values.imageUrl,
-        floorPlans: values.floorPlans.filter((p) => p.url),
+        floorPlans: values.floorPlans,
         coordinates: coordinates,
       };
 

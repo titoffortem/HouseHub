@@ -29,15 +29,13 @@
     "FloorPlan": {
       "title": "FloorPlan",
       "type": "object",
-      "description": "Represents a single floor plan with its URL.",
+      "description": "Represents a single floor plan. The URL can be an empty string if no plan is available.",
       "properties": {
         "url": {
           "type": "string",
-          "description": "URL of the image for the floor plan.",
-          "format": "uri"
+          "description": "URL of the image for the floor plan. Can be empty."
         }
-      },
-      "required": ["url"]
+      }
     },
     "House": {
       "title": "House",
