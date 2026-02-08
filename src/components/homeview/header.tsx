@@ -40,7 +40,9 @@ export function Header({ onSearch }: HeaderProps) {
   return (
     <header className="relative flex h-auto items-center justify-between gap-4 border-b bg-card px-4 md:px-6 z-20 shrink-0 py-2">
       <div className="flex items-center">
-        <Image src="https://sun9-8.userapi.com/s/v1/ig2/rmZGJAqMA5y7TrFTYnndwLrcU7wb72mnvv6Z2LUgpsMdCNL097Kn9gvW9w__rsBMEY20A4Tt-ecLIPEq4qCWPtPx.jpg?quality=95&as=32x10,48x15,72x22,108x34,160x50,240x75,360x112,448x140&from=bu&cs=448x0" alt="Логотип HouseHub" width={140} height={40} />
+        <div className="overflow-hidden">
+          <Image className="-ml-1" src="https://sun9-8.userapi.com/s/v1/ig2/rmZGJAqMA5y7TrFTYnndwLrcU7wb72mnvv6Z2LUgpsMdCNL097Kn9gvW9w__rsBMEY20A4Tt-ecLIPEq4qCWPtPx.jpg?quality=95&as=32x10,48x15,72x22,108x34,160x50,240x75,360x112,448x140&from=bu&cs=448x0" alt="Логотип HouseHub" width={140} height={40} />
+        </div>
       </div>
       
       <div className="flex-1 flex justify-center px-4">
