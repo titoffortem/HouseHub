@@ -50,6 +50,7 @@ export default function Home() {
     string | undefined
   >();
   const [isResultsListOpen, setIsResultsListOpen] = React.useState(false);
+  const [returnToList, setReturnToList] = React.useState(false);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -100,6 +101,7 @@ export default function Home() {
 
     // Reset list view when a new search is initiated
     setIsResultsListOpen(false);
+    setReturnToList(false);
 
     const hasTerm = searchTerm.trim() !== "" && searchTerm.trim() !== "-";
     const hasLocation = !searchAllMap && city.trim() !== "";
@@ -158,15 +160,23 @@ export default function Home() {
 
   const handleSelectHouse = (house: HouseWithId) => {
     setSelectedHouse(house);
+    setReturnToList(false);
   };
 
   const handleSelectHouseFromList = (house: HouseWithId) => {
     setSelectedHouse(house);
     setIsResultsListOpen(false); // Close list after selection
+    setReturnToList(true);
   };
 
-  const handleDeselectHouse = () => {
-    setSelectedHouse(null);
+  const handlePropertySheetOpenChange = (isOpen: boolean) => {
+    if (!isOpen) {
+      setSelectedHouse(null);
+      if (returnToList && filteredHouses && filteredHouses.length > 0) {
+        setIsResultsListOpen(true);
+      }
+      setReturnToList(false);
+    }
   };
 
   const handleOpenForm = (house?: HouseWithId) => {
@@ -380,9 +390,6 @@ export default function Home() {
     const houseRef = doc(firestore, "houses", houseId);
     deleteDocumentNonBlocking(houseRef);
 
-    if (selectedHouse?.id === houseId) {
-      setSelectedHouse(null);
-    }
     toast({
       title: "Дом успешно удален",
     });
@@ -412,7 +419,7 @@ export default function Home() {
         <PropertyDetails
           house={selectedHouse}
           open={!!selectedHouse}
-          onOpenChange={handleDeselectHouse}
+          onOpenChange={handlePropertySheetOpenChange}
           isAdmin={isAdmin}
           onEdit={handleOpenForm}
           onDelete={handleDeleteHouse}
