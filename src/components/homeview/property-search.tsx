@@ -14,6 +14,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Separator } from "../ui/separator";
+import { cn } from "@/lib/utils";
 
 interface PropertySearchProps {
   onSearch: (params: {
@@ -90,6 +91,12 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
     }
   };
 
+  const handleFocus = () => {
+    if (searchType === 'year' || searchType === 'buildingSeries') {
+      setIsSecondaryPanelOpen(true);
+    }
+  }
+
   return (
     <div className="relative w-full" ref={searchContainerRef}>
       <div className="flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border">
@@ -106,7 +113,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
         <div className="relative flex-grow flex items-center">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           {searchType === 'year' ? (
-              <div className="flex w-full items-center" onFocus={() => setIsSecondaryPanelOpen(true)}>
+              <div className="flex w-full items-center" onFocus={handleFocus}>
                   <Input
                       type="number"
                       placeholder="От"
@@ -137,11 +144,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  onFocus={() => {
-                    if (searchType === 'buildingSeries') {
-                      setIsSecondaryPanelOpen(true)
-                    }
-                  }}
+                  onFocus={handleFocus}
               />
           )}
         </div>
@@ -152,23 +155,28 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
             <X className="h-5 w-5" />
         </Button>
       </div>
-       {isSecondaryPanelOpen && (searchType === 'year' || searchType === 'buildingSeries') && (
-        <div className="absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border text-sm">
-            <Input 
-                type="text"
-                placeholder="Город"
-                className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                disabled={searchAllMap}
-            />
-             <Separator orientation="vertical" className="h-6" />
-            <div className="flex items-center space-x-2 whitespace-nowrap px-3">
-                <Checkbox id="all-map" checked={searchAllMap} onCheckedChange={(checked) => setSearchAllMap(!!checked)} />
-                <Label htmlFor="all-map" className="font-normal text-muted-foreground">По всей карте</Label>
-            </div>
+      <div
+        className={cn(
+          "absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border text-sm transition-all duration-200 ease-in-out",
+          (isSecondaryPanelOpen && (searchType === 'year' || searchType === 'buildingSeries'))
+          ? 'opacity-100 translate-y-0'
+          : 'opacity-0 -translate-y-4 pointer-events-none'
+        )}
+      >
+        <Input 
+            type="text"
+            placeholder="Город"
+            className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            value={city}
+            onChange={(e) => setCity(e.target.value)}
+            disabled={searchAllMap}
+        />
+          <Separator orientation="vertical" className="h-6" />
+        <div className="flex items-center space-x-2 whitespace-nowrap px-3">
+            <Checkbox id="all-map" checked={searchAllMap} onCheckedChange={(checked) => setSearchAllMap(!!checked)} />
+            <Label htmlFor="all-map" className="font-normal text-muted-foreground">По всей карте</Label>
         </div>
-      )}
+      </div>
     </div>
   );
 }
