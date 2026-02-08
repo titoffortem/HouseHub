@@ -18,13 +18,14 @@ import {
 } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { List, Plus } from "lucide-react";
 import {
   PropertyForm,
   type FormValues,
 } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
 import { PropertySearch } from "@/components/homeview/property-search";
+import { SearchResultsList } from "@/components/homeview/search-results-list";
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<
@@ -48,6 +49,7 @@ export default function Home() {
   const [pickingToastId, setPickingToastId] = React.useState<
     string | undefined
   >();
+  const [isResultsListOpen, setIsResultsListOpen] = React.useState(false);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -96,13 +98,13 @@ export default function Home() {
 
     if (!allHouses) return;
 
-    const hasTerm = searchTerm && searchTerm.trim() !== "" && searchTerm.trim() !== "-";
-    const hasLocation = city.trim();
+    // Reset list view when a new search is initiated
+    setIsResultsListOpen(false);
 
-    const isFilteringByTerm = hasTerm;
-    const isFilteringByLocation = (searchType === "year" || searchType === "buildingSeries") && !searchAllMap && hasLocation;
+    const hasTerm = searchTerm.trim() !== "" && searchTerm.trim() !== "-";
+    const hasLocation = !searchAllMap && city.trim() !== "";
 
-    if (!isFilteringByTerm && !isFilteringByLocation) {
+    if (!hasTerm && !hasLocation) {
       setFilteredHouses(null);
       return;
     }
@@ -111,64 +113,44 @@ export default function Home() {
     const lowercasedCity = city.toLowerCase().trim();
 
     const results = allHouses.filter((house) => {
-      // Filter by search term (year, series, address)
-      if (isFilteringByTerm) {
-        let termMatch = false;
-        switch (searchType) {
-          case "year": {
-            const term = searchTerm.trim();
-            if (term.includes("-")) {
-              const [fromStr, toStr] = term.split("-");
-              const from = fromStr ? parseInt(fromStr, 10) : null;
-              const to = toStr ? parseInt(toStr, 10) : null;
-              const houseYear = house.year;
-              const isFromValid = from !== null && !isNaN(from);
-              const isToValid = to !== null && !isNaN(to);
-
-              if (isFromValid && isToValid) {
-                if (houseYear >= from && houseYear <= to) termMatch = true;
-              } else if (isFromValid) {
-                if (houseYear >= from) termMatch = true;
-              } else if (isToValid) {
-                if (houseYear <= to) termMatch = true;
-              }
-            } else {
-              const year = parseInt(term, 10);
-              if (!isNaN(year)) {
-                if (house.year === year) termMatch = true;
-              }
-            }
-            break;
-          }
-          case "buildingSeries": {
-            const searchSeries = lowercasedSearchTerm.split(',').map(s => s.trim()).filter(s => s);
-            if (searchSeries.length > 0) {
-              const houseSeriesLower = house.buildingSeries.toLowerCase();
-              if (searchSeries.some(s => houseSeriesLower.includes(s))) {
-                termMatch = true;
-              }
-            }
-            break;
-          }
-          default: // address
-            if (house.address.toLowerCase().includes(lowercasedSearchTerm))
-              termMatch = true;
-            break;
+      // If there's a location filter, it must match
+      if (hasLocation) {
+        if (!house.address.toLowerCase().includes(lowercasedCity)) {
+          return false;
         }
-        if (!termMatch) return false;
       }
 
-      // Filter by location (city)
-      if (isFilteringByLocation) {
-        const houseAddressLower = house.address.toLowerCase();
-        const cityMatch = lowercasedCity
-          ? houseAddressLower.includes(lowercasedCity)
-          : true;
-
-        if (!cityMatch) return false;
+      // If there's no term filter, the house passes (since we already checked location)
+      if (!hasTerm) {
+        return true;
       }
 
-      return true;
+      // Check against the term filter
+      switch (searchType) {
+        case "address":
+          return house.address.toLowerCase().includes(lowercasedSearchTerm);
+        case "year": {
+          const term = searchTerm.trim();
+          if (term.includes("-")) {
+            const [fromStr, toStr] = term.split("-");
+            const from = fromStr ? parseInt(fromStr, 10) : -Infinity;
+            const to = toStr ? parseInt(toStr, 10) : Infinity;
+            if (isNaN(from) && isNaN(to)) return false;
+            const houseYear = house.year;
+            return houseYear >= from && houseYear <= to;
+          } else {
+            const year = parseInt(term, 10);
+            return !isNaN(year) ? house.year === year : false;
+          }
+        }
+        case "buildingSeries": {
+          const searchSeries = lowercasedSearchTerm.split(',').map(s => s.trim()).filter(s => s);
+          const houseSeriesLower = house.buildingSeries.toLowerCase();
+          return searchSeries.some(s => houseSeriesLower.includes(s));
+        }
+        default:
+          return true;
+      }
     });
 
     setFilteredHouses(results);
@@ -176,6 +158,11 @@ export default function Home() {
 
   const handleSelectHouse = (house: HouseWithId) => {
     setSelectedHouse(house);
+  };
+
+  const handleSelectHouseFromList = (house: HouseWithId) => {
+    setSelectedHouse(house);
+    setIsResultsListOpen(false); // Close list after selection
   };
 
   const handleDeselectHouse = () => {
@@ -430,13 +417,18 @@ export default function Home() {
           onEdit={handleOpenForm}
           onDelete={handleDeleteHouse}
         />
-        {isAdmin && (
-          <div className="absolute bottom-4 right-4 z-10">
+        <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-2">
+          {filteredHouses && filteredHouses.length > 0 && (
+            <Button size="lg" variant="secondary" onClick={() => setIsResultsListOpen(true)}>
+              <List className="mr-2 h-5 w-5" /> Показать список ({filteredHouses.length})
+            </Button>
+          )}
+          {isAdmin && (
             <Button size="lg" className="bg-black text-white hover:bg-black/90" onClick={() => handleOpenForm()}>
               <Plus className="mr-2 h-5 w-5" /> Добавить дом
             </Button>
-          </div>
-        )}
+          )}
+        </div>
         {isAdmin && (
           <PropertyForm
             open={isFormOpen}
@@ -446,6 +438,14 @@ export default function Home() {
             initialData={editingHouse}
             onSetIsPickingLocation={handleSetIsPickingLocation}
             pickedCoords={pickedCoords}
+          />
+        )}
+        {filteredHouses && (
+          <SearchResultsList
+            houses={filteredHouses}
+            open={isResultsListOpen}
+            onOpenChange={setIsResultsListOpen}
+            onSelectHouse={handleSelectHouseFromList}
           />
         )}
       </main>
