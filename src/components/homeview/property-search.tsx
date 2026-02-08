@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -32,6 +31,27 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
   const [searchType, setSearchType] = React.useState("address");
   const [city, setCity] = React.useState("");
   const [searchAllMap, setSearchAllMap] = React.useState(true);
+  const [isSecondaryPanelOpen, setIsSecondaryPanelOpen] = React.useState(false);
+  const searchContainerRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // If click is outside the referenced container AND not inside a radix popper (for the Select dropdown)
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(target) &&
+        !target.closest('[data-radix-popper-content-wrapper]')
+      ) {
+        setIsSecondaryPanelOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleSearch = () => {
     let term = searchTerm;
@@ -54,6 +74,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
     setCity("");
     setSearchAllMap(true);
     onSearch({ searchTerm: "", searchType, city: "", searchAllMap: true });
+    setIsSecondaryPanelOpen(false);
   };
 
   const handleSearchTypeChange = (value: string) => {
@@ -63,10 +84,16 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
     setYearTo("");
     // Don't clear city to allow switching between search types with location
     onSearch({ searchTerm: "", searchType: value, city, searchAllMap });
+
+    if (value === 'year' || value === 'buildingSeries') {
+      setIsSecondaryPanelOpen(true);
+    } else {
+      setIsSecondaryPanelOpen(false);
+    }
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={searchContainerRef}>
       <div className="flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border">
         <Select value={searchType} onValueChange={handleSearchTypeChange}>
           <SelectTrigger className="w-[120px] h-9 border-0 focus:ring-0 focus:ring-offset-0 bg-transparent shadow-none text-muted-foreground">
@@ -122,7 +149,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
             <X className="h-5 w-5" />
         </Button>
       </div>
-       {(searchType === 'year' || searchType === 'buildingSeries') && (
+       {isSecondaryPanelOpen && (searchType === 'year' || searchType === 'buildingSeries') && (
         <div className="absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border text-sm">
             <Input 
                 type="text"
