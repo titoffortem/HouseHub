@@ -90,78 +90,83 @@ export default function Home() {
     searchTerm: string;
     searchType: string;
     city: string;
-    region: string;
     searchAllMap: boolean;
   }) => {
-    const { searchTerm, searchType, city, region, searchAllMap } = params;
+    const { searchTerm, searchType, city, searchAllMap } = params;
 
     if (!allHouses) return;
 
-    const hasTerm = searchTerm && searchTerm.trim() !== '' && searchTerm.trim() !== '-';
-    const hasLocation = city.trim() || region.trim();
-    
+    const hasTerm = searchTerm && searchTerm.trim() !== "" && searchTerm.trim() !== "-";
+    const hasLocation = city.trim();
+
     const isFilteringByTerm = hasTerm;
-    const isFilteringByLocation = searchType === 'year' && !searchAllMap && hasLocation;
+    const isFilteringByLocation = searchType === "year" && !searchAllMap && hasLocation;
 
     if (!isFilteringByTerm && !isFilteringByLocation) {
-        setFilteredHouses(null);
-        return;
+      setFilteredHouses(null);
+      return;
     }
 
     const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
     const lowercasedCity = city.toLowerCase().trim();
-    const lowercasedRegion = region.toLowerCase().trim();
 
     const results = allHouses.filter((house) => {
-        // Filter by search term (year, series, address)
-        if (isFilteringByTerm) {
-            let termMatch = false;
-            switch (searchType) {
-                case "year": {
-                    const term = searchTerm.trim();
-                    if (term.includes("-")) {
-                        const [fromStr, toStr] = term.split("-");
-                        const from = fromStr ? parseInt(fromStr, 10) : null;
-                        const to = toStr ? parseInt(toStr, 10) : null;
-                        const houseYear = house.year;
-                        const isFromValid = from !== null && !isNaN(from);
-                        const isToValid = to !== null && !isNaN(to);
+      // Filter by search term (year, series, address)
+      if (isFilteringByTerm) {
+        let termMatch = false;
+        switch (searchType) {
+          case "year": {
+            const term = searchTerm.trim();
+            if (term.includes("-")) {
+              const [fromStr, toStr] = term.split("-");
+              const from = fromStr ? parseInt(fromStr, 10) : null;
+              const to = toStr ? parseInt(toStr, 10) : null;
+              const houseYear = house.year;
+              const isFromValid = from !== null && !isNaN(from);
+              const isToValid = to !== null && !isNaN(to);
 
-                        if (isFromValid && isToValid) {
-                            if (houseYear >= from && houseYear <= to) termMatch = true;
-                        } else if (isFromValid) {
-                            if (houseYear >= from) termMatch = true;
-                        } else if (isToValid) {
-                            if (houseYear <= to) termMatch = true;
-                        }
-                    } else {
-                        const year = parseInt(term, 10);
-                        if (!isNaN(year)) {
-                            if (house.year === year) termMatch = true;
-                        }
-                    }
-                    break;
-                }
-                case "buildingSeries":
-                    if (house.buildingSeries.toLowerCase().includes(lowercasedSearchTerm)) termMatch = true;
-                    break;
-                default: // address
-                    if (house.address.toLowerCase().includes(lowercasedSearchTerm)) termMatch = true;
-                    break;
+              if (isFromValid && isToValid) {
+                if (houseYear >= from && houseYear <= to) termMatch = true;
+              } else if (isFromValid) {
+                if (houseYear >= from) termMatch = true;
+              } else if (isToValid) {
+                if (houseYear <= to) termMatch = true;
+              }
+            } else {
+              const year = parseInt(term, 10);
+              if (!isNaN(year)) {
+                if (house.year === year) termMatch = true;
+              }
             }
-            if (!termMatch) return false;
+            break;
+          }
+          case "buildingSeries":
+            if (
+              house.buildingSeries
+                .toLowerCase()
+                .includes(lowercasedSearchTerm)
+            )
+              termMatch = true;
+            break;
+          default: // address
+            if (house.address.toLowerCase().includes(lowercasedSearchTerm))
+              termMatch = true;
+            break;
         }
-        
-        // Filter by location (city, region)
-        if (isFilteringByLocation) {
-            const houseAddressLower = house.address.toLowerCase();
-            const cityMatch = lowercasedCity ? houseAddressLower.includes(lowercasedCity) : true;
-            const regionMatch = lowercasedRegion ? houseAddressLower.includes(lowercasedRegion) : true;
-            
-            if (!(cityMatch && regionMatch)) return false;
-        }
-        
-        return true;
+        if (!termMatch) return false;
+      }
+
+      // Filter by location (city)
+      if (isFilteringByLocation) {
+        const houseAddressLower = house.address.toLowerCase();
+        const cityMatch = lowercasedCity
+          ? houseAddressLower.includes(lowercasedCity)
+          : true;
+
+        if (!cityMatch) return false;
+      }
+
+      return true;
     });
 
     setFilteredHouses(results);

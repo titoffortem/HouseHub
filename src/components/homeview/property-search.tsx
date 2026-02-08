@@ -21,7 +21,6 @@ interface PropertySearchProps {
     searchTerm: string;
     searchType: string;
     city: string;
-    region: string;
     searchAllMap: boolean;
   }) => void;
 }
@@ -32,7 +31,6 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
   const [yearTo, setYearTo] = React.useState("");
   const [searchType, setSearchType] = React.useState("address");
   const [city, setCity] = React.useState("");
-  const [region, setRegion] = React.useState("");
   const [searchAllMap, setSearchAllMap] = React.useState(true);
 
   const handleSearch = () => {
@@ -46,7 +44,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
         term = `${yearFrom}-${yearTo}`;
       }
     }
-    onSearch({ searchTerm: term, searchType, city, region, searchAllMap });
+    onSearch({ searchTerm: term, searchType, city, searchAllMap });
   };
   
   const handleClear = () => {
@@ -54,9 +52,8 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
     setYearFrom("");
     setYearTo("");
     setCity("");
-    setRegion("");
     setSearchAllMap(true);
-    onSearch({ searchTerm: "", searchType, city: "", region: "", searchAllMap: true });
+    onSearch({ searchTerm: "", searchType, city: "", searchAllMap: true });
   };
 
   const handleSearchTypeChange = (value: string) => {
@@ -64,12 +61,12 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
     setSearchTerm("");
     setYearFrom("");
     setYearTo("");
-    // Don't clear city/region to allow switching between search types with location
-    onSearch({ searchTerm: "", searchType: value, city, region, searchAllMap });
+    // Don't clear city to allow switching between search types with location
+    onSearch({ searchTerm: "", searchType: value, city, searchAllMap });
   };
 
   return (
-    <div className="relative w-full max-w-xl">
+    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-xl">
       <div className="flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border">
         <Select value={searchType} onValueChange={handleSearchTypeChange}>
           <SelectTrigger className="w-[120px] h-9 border-0 focus:ring-0 focus:ring-offset-0 bg-transparent shadow-none text-muted-foreground">
@@ -125,22 +122,13 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
         </Button>
       </div>
        {searchType === 'year' && (
-        <div className="absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-background p-1 shadow-sm border text-sm">
+        <div className="absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border text-sm">
             <Input 
                 type="text"
                 placeholder="Город"
                 className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                disabled={searchAllMap}
-            />
-             <Separator orientation="vertical" className="h-6" />
-            <Input 
-                type="text"
-                placeholder="Область/Регион"
-                className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
                 disabled={searchAllMap}
             />
              <Separator orientation="vertical" className="h-6" />
