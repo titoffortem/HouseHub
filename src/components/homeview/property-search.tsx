@@ -66,7 +66,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
   };
 
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-xl">
+    <div className="relative w-full">
       <div className="flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border">
         <Select value={searchType} onValueChange={handleSearchTypeChange}>
           <SelectTrigger className="w-[120px] h-9 border-0 focus:ring-0 focus:ring-offset-0 bg-transparent shadow-none text-muted-foreground">
@@ -105,6 +105,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
                   type='text'
                   placeholder={
                       searchType === 'address' ? 'Поиск по адресу...' :
+                      searchType === 'buildingSeries' ? 'Серии через запятую...' :
                       'Введите серию...'
                   }
                   className="w-full pl-10 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent h-9"
@@ -121,7 +122,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
             <X className="h-5 w-5" />
         </Button>
       </div>
-       {searchType === 'year' && (
+       {(searchType === 'year' || searchType === 'buildingSeries') && (
         <div className="absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border text-sm">
             <Input 
                 type="text"

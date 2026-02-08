@@ -100,7 +100,7 @@ export default function Home() {
     const hasLocation = city.trim();
 
     const isFilteringByTerm = hasTerm;
-    const isFilteringByLocation = searchType === "year" && !searchAllMap && hasLocation;
+    const isFilteringByLocation = (searchType === "year" || searchType === "buildingSeries") && !searchAllMap && hasLocation;
 
     if (!isFilteringByTerm && !isFilteringByLocation) {
       setFilteredHouses(null);
@@ -140,14 +140,16 @@ export default function Home() {
             }
             break;
           }
-          case "buildingSeries":
-            if (
-              house.buildingSeries
-                .toLowerCase()
-                .includes(lowercasedSearchTerm)
-            )
-              termMatch = true;
+          case "buildingSeries": {
+            const searchSeries = lowercasedSearchTerm.split(',').map(s => s.trim()).filter(s => s);
+            if (searchSeries.length > 0) {
+              const houseSeriesLower = house.buildingSeries.toLowerCase();
+              if (searchSeries.some(s => houseSeriesLower.includes(s))) {
+                termMatch = true;
+              }
+            }
             break;
+          }
           default: // address
             if (house.address.toLowerCase().includes(lowercasedSearchTerm))
               termMatch = true;
