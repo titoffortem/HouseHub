@@ -408,11 +408,8 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full bg-background">
-      <Header />
+      <Header onSearch={handleSearch} />
       <main className="relative h-[calc(100vh-4rem)] w-full">
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-xl px-4">
-            <PropertySearch onSearch={handleSearch} />
-        </div>
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             Загрузка домов...

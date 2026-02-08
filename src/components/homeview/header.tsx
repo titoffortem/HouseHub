@@ -13,8 +13,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import { PropertySearch } from "./property-search";
 
-export function Header() {
+interface HeaderProps {
+    onSearch: (params: {
+        searchTerm: string;
+        searchType: string;
+        city: string;
+        searchAllMap: boolean;
+    }) => void;
+}
+
+export function Header({ onSearch }: HeaderProps) {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
 
@@ -28,12 +38,16 @@ export function Header() {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-card px-4 md:px-6 sticky top-0 z-20">
+    <header className="flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
       <div className="flex items-center gap-2 overflow-hidden">
         <Image src="https://sun9-8.userapi.com/s/v1/ig2/rmZGJAqMA5y7TrFTYnndwLrcU7wb72mnvv6Z2LUgpsMdCNL097Kn9gvW9w__rsBMEY20A4Tt-ecLIPEq4qCWPtPx.jpg?quality=95&as=32x10,48x15,72x22,108x34,160x50,240x75,360x112,448x140&from=bu&cs=448x0" alt="Логотип HouseHub" width={140} height={40} className="relative -left-0.5" />
       </div>
       
-      <div className="flex-1" />
+      <div className="flex-1 flex justify-center">
+        <div className="w-full max-w-xl">
+           <PropertySearch onSearch={onSearch} />
+        </div>
+      </div>
 
       <div>
         {isUserLoading ? (
