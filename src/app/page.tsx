@@ -88,7 +88,7 @@ export default function Home() {
   const handleSearch = (searchTerm: string, searchType: string) => {
     if (!allHouses) return;
 
-    if (!searchTerm) {
+    if (!searchTerm || searchTerm.trim() === "-") {
       setFilteredHouses(null);
       return;
     }
@@ -97,8 +97,35 @@ export default function Home() {
 
     const results = allHouses.filter((house) => {
       switch (searchType) {
-        case "year":
-          return house.year.toString() === searchTerm.trim();
+        case "year": {
+          const term = searchTerm.trim();
+          // Check for range
+          if (term.includes("-")) {
+            const [fromStr, toStr] = term.split("-");
+            const from = fromStr ? parseInt(fromStr, 10) : null;
+            const to = toStr ? parseInt(toStr, 10) : null;
+            const houseYear = house.year;
+
+            const isFromValid = from !== null && !isNaN(from);
+            const isToValid = to !== null && !isNaN(to);
+
+            if (isFromValid && isToValid) {
+              return houseYear >= from && houseYear <= to;
+            } else if (isFromValid) {
+              return houseYear >= from;
+            } else if (isToValid) {
+              return houseYear <= to;
+            }
+            return false;
+          } else {
+            // Single year search
+            const year = parseInt(term, 10);
+            if (!isNaN(year)) {
+              return house.year === year;
+            }
+            return false;
+          }
+        }
         case "buildingSeries":
           return house.buildingSeries
             .toLowerCase()
