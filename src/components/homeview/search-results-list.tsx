@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -46,13 +45,19 @@ export function SearchResultsList({
                 className="flex items-center gap-4 p-4 text-left border-b hover:bg-accent/50 transition-colors w-full"
               >
                 <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                  <Image
-                    src={house.imageUrl}
-                    alt={`Фото ${house.address}`}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 640px) 80px, 96px"
-                  />
+                  {house.imageUrl ? (
+                    <Image
+                      src={house.imageUrl}
+                      alt={`Фото ${house.address}`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 80px, 96px"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full w-full">
+                        <Building className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-grow">
                   <p className="font-semibold text-foreground leading-tight">
