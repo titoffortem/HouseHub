@@ -13,19 +13,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
-import { PropertySearch } from "./property-search";
 
-interface HeaderProps {
-  onSearch: (params: {
-    searchTerm: string;
-    searchType: string;
-    city: string;
-    region: string;
-    searchAllMap: boolean;
-  }) => void;
-}
-
-export function Header({ onSearch }: HeaderProps) {
+export function Header() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
 
@@ -44,14 +33,12 @@ export function Header({ onSearch }: HeaderProps) {
         <Image src="https://sun9-8.userapi.com/s/v1/ig2/rmZGJAqMA5y7TrFTYnndwLrcU7wb72mnvv6Z2LUgpsMdCNL097Kn9gvW9w__rsBMEY20A4Tt-ecLIPEq4qCWPtPx.jpg?quality=95&as=32x10,48x15,72x22,108x34,160x50,240x75,360x112,448x140&from=bu&cs=448x0" alt="Логотип HouseHub" width={140} height={40} className="relative -left-0.5" />
       </div>
       
-      <div className="w-full max-w-xl">
-        <PropertySearch onSearch={onSearch} />
-      </div>
+      <div className="flex-1" />
 
       <div>
         {isUserLoading ? (
           <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
-        ) : user && (
+        ) : user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -91,6 +78,10 @@ export function Header({ onSearch }: HeaderProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        ) : (
+          <a href="/admin/login">
+            <Button variant="outline">Вход для администратора</Button>
+          </a>
         )}
       </div>
     </header>

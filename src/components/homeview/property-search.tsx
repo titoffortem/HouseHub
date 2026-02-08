@@ -64,15 +64,13 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
     setSearchTerm("");
     setYearFrom("");
     setYearTo("");
-    setCity("");
-    setRegion("");
-    setSearchAllMap(true);
-    onSearch({ searchTerm: "", searchType: value, city: "", region: "", searchAllMap: true });
+    // Don't clear city/region to allow switching between search types with location
+    onSearch({ searchTerm: "", searchType: value, city, region, searchAllMap });
   };
 
   return (
     <div className="relative w-full max-w-xl">
-      <div className="flex items-center gap-2 rounded-lg bg-background p-1 shadow-sm border">
+      <div className="flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border">
         <Select value={searchType} onValueChange={handleSearchTypeChange}>
           <SelectTrigger className="w-[120px] h-9 border-0 focus:ring-0 focus:ring-offset-0 bg-transparent shadow-none text-muted-foreground">
             <SelectValue />

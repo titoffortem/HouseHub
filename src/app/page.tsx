@@ -24,6 +24,7 @@ import {
   type FormValues,
 } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
+import { PropertySearch } from "@/components/homeview/property-search";
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<
@@ -99,8 +100,10 @@ export default function Home() {
     const hasTerm = searchTerm && searchTerm.trim() !== '' && searchTerm.trim() !== '-';
     const hasLocation = city.trim() || region.trim();
     
-    // If no criteria for any search type, show all houses.
-    if (!hasTerm && (searchType !== 'year' || !hasLocation)) {
+    const isFilteringByTerm = hasTerm;
+    const isFilteringByLocation = searchType === 'year' && !searchAllMap && hasLocation;
+
+    if (!isFilteringByTerm && !isFilteringByLocation) {
         setFilteredHouses(null);
         return;
     }
@@ -110,10 +113,9 @@ export default function Home() {
     const lowercasedRegion = region.toLowerCase().trim();
 
     const results = allHouses.filter((house) => {
-        let mainFilterPass = true;
-        let locationFilterPass = true;
-
-        if (hasTerm) {
+        // Filter by search term (year, series, address)
+        if (isFilteringByTerm) {
+            let termMatch = false;
             switch (searchType) {
                 case "year": {
                     const term = searchTerm.trim();
@@ -126,37 +128,40 @@ export default function Home() {
                         const isToValid = to !== null && !isNaN(to);
 
                         if (isFromValid && isToValid) {
-                            mainFilterPass = houseYear >= from && houseYear <= to;
+                            if (houseYear >= from && houseYear <= to) termMatch = true;
                         } else if (isFromValid) {
-                            mainFilterPass = houseYear >= from;
+                            if (houseYear >= from) termMatch = true;
                         } else if (isToValid) {
-                            mainFilterPass = houseYear <= to;
+                            if (houseYear <= to) termMatch = true;
                         }
                     } else {
                         const year = parseInt(term, 10);
                         if (!isNaN(year)) {
-                            mainFilterPass = house.year === year;
+                            if (house.year === year) termMatch = true;
                         }
                     }
                     break;
                 }
                 case "buildingSeries":
-                    mainFilterPass = house.buildingSeries.toLowerCase().includes(lowercasedSearchTerm);
+                    if (house.buildingSeries.toLowerCase().includes(lowercasedSearchTerm)) termMatch = true;
                     break;
                 default: // address
-                    mainFilterPass = house.address.toLowerCase().includes(lowercasedSearchTerm);
+                    if (house.address.toLowerCase().includes(lowercasedSearchTerm)) termMatch = true;
                     break;
             }
+            if (!termMatch) return false;
         }
         
-        if (searchType === 'year' && !searchAllMap && hasLocation) {
+        // Filter by location (city, region)
+        if (isFilteringByLocation) {
             const houseAddressLower = house.address.toLowerCase();
             const cityMatch = lowercasedCity ? houseAddressLower.includes(lowercasedCity) : true;
             const regionMatch = lowercasedRegion ? houseAddressLower.includes(lowercasedRegion) : true;
-            locationFilterPass = cityMatch && regionMatch;
+            
+            if (!(cityMatch && regionMatch)) return false;
         }
         
-        return mainFilterPass && locationFilterPass;
+        return true;
     });
 
     setFilteredHouses(results);
@@ -391,8 +396,11 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full bg-background">
-      <Header onSearch={handleSearch} />
+      <Header />
       <main className="relative h-[calc(100vh-4rem)] w-full">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 w-full max-w-xl px-4">
+            <PropertySearch onSearch={handleSearch} />
+        </div>
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             Загрузка домов...
