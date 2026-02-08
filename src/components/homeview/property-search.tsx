@@ -71,7 +71,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
   };
 
   return (
-    <div className="w-full max-w-xl space-y-2">
+    <div className="relative w-full max-w-xl">
       <div className="flex items-center gap-2 rounded-lg bg-background p-1 shadow-sm border">
         <Select value={searchType} onValueChange={handleSearchTypeChange}>
           <SelectTrigger className="w-[120px] h-9 border-0 focus:ring-0 focus:ring-offset-0 bg-transparent shadow-none text-muted-foreground">
@@ -127,7 +127,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
         </Button>
       </div>
        {searchType === 'year' && (
-        <div className="flex items-center gap-2 rounded-lg bg-background p-1 shadow-sm border text-sm">
+        <div className="absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-background p-1 shadow-sm border text-sm">
             <Input 
                 type="text"
                 placeholder="Город"
