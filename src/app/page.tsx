@@ -119,6 +119,20 @@ export default function Home() {
     const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
     const lowercasedCity = city.toLowerCase().trim();
 
+    // Helper to parse year string into a [from, to] tuple.
+    const parseYearRange = (yearStr: string): [number, number] | null => {
+        if (!yearStr) return null;
+        if (yearStr.includes("-")) {
+            const parts = yearStr.split("-");
+            const from = parts[0] ? parseInt(parts[0], 10) : -Infinity;
+            const to = parts[1] ? parseInt(parts[1], 10) : Infinity;
+            if (isNaN(from) && isNaN(to)) return null;
+            return [from, to];
+        }
+        const year = parseInt(yearStr, 10);
+        return isNaN(year) ? null : [year, year];
+    };
+
     const results = allHouses.filter((house) => {
       // If there's a location filter, it must match
       if (hasLocation) {
@@ -137,18 +151,16 @@ export default function Home() {
         case "address":
           return house.address.toLowerCase().includes(lowercasedSearchTerm);
         case "year": {
-          const term = searchTerm.trim();
-          if (term.includes("-")) {
-            const [fromStr, toStr] = term.split("-");
-            const from = fromStr ? parseInt(fromStr, 10) : -Infinity;
-            const to = toStr ? parseInt(toStr, 10) : Infinity;
-            if (isNaN(from) && isNaN(to)) return false;
-            const houseYear = house.year;
-            return houseYear >= from && houseYear <= to;
-          } else {
-            const year = parseInt(term, 10);
-            return !isNaN(year) ? house.year === year : false;
-          }
+          const searchTermRange = parseYearRange(searchTerm.trim());
+          if (!searchTermRange) return false;
+          const [searchFrom, searchTo] = searchTermRange;
+
+          const houseYearRange = parseYearRange(String(house.year));
+          if (!houseYearRange) return false;
+          const [houseFrom, houseTo] = houseYearRange;
+
+          // Check for interval overlap: search range must overlap with house's year range
+          return Math.max(searchFrom, houseFrom) <= Math.min(searchTo, houseTo);
         }
         case "buildingSeries": {
           const searchSeries = lowercasedSearchTerm.split(',').map(s => s.trim()).filter(s => s);

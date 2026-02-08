@@ -50,12 +50,13 @@
           "$ref": "#/entities/Coordinates"
         },
         "year": {
-          "type": "number",
-          "description": "The year the house was constructed."
+          "type": "string",
+          "description": "The construction year or year range of the house (e.g., '1985' or '1990-1995')."
         },
         "buildingSeries": {
-          "type": "string",
-          "description": "The building series the house belongs to."
+          "type": "array",
+          "description": "The building series the house belongs to. Can contain multiple series.",
+          "items": { "type": "string" }
         },
         "floors": {
           "type": "number",

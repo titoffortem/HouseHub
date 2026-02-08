@@ -28,8 +28,8 @@ const floorPlanSchema = z.object({
 });
 
 const formSchema = z.object({
-  address: z.string(),
-  year: z.coerce.number().int().min(1800).max(new Date().getFullYear()),
+  address: z.string().min(1, "Адрес обязателен"),
+  year: z.string().regex(/^\d{4}(?:-\d{4})?$/, { message: "Год должен быть в формате ГГГГ или ГГГГ-ГГГГ" }).min(1, "Год постройки обязателен"),
   buildingSeries: z.string().min(1, "Серия здания обязательна"),
   floors: z.coerce.number().int().positive("Должно быть положительное число"),
   imageUrl: z.string().url("Должен быть действительный URL").or(z.literal("")),
@@ -38,26 +38,12 @@ const formSchema = z.object({
   lng: z.coerce.number().optional(),
   inputType: z.enum(['address', 'coords']).default('address'),
 }).superRefine((data, ctx) => {
-    if (data.inputType === 'address' && !data.address) {
-        ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            path: ['address'],
-            message: 'Адрес обязателен',
-        });
-    }
     if (data.inputType === 'coords') {
         if (data.lat === undefined || Number.isNaN(data.lat)) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lat'], message: 'Широта обязательна' });
         }
         if (data.lng === undefined || Number.isNaN(data.lng)) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lng'], message: 'Долгота обязательна' });
-        }
-        if (!data.address || data.address === 'Поиск адреса...') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                path: ['address'],
-                message: 'Дождитесь определения адреса по координатам.',
-            });
         }
     }
 });
@@ -96,6 +82,7 @@ export function PropertyForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
       address: "",
+      year: "",
       inputType: "address",
       imageUrl: "",
       floorPlans: [],
@@ -118,6 +105,7 @@ export function PropertyForm({
       // EDITING mode
       reset({
         ...initialData,
+        year: String(initialData.year),
         buildingSeries: Array.isArray(initialData.buildingSeries) ? initialData.buildingSeries.join(', ') : (initialData.buildingSeries || ''),
         inputType: 'address',
         lat: initialData.coordinates.points[0]?.lat,
@@ -142,7 +130,7 @@ export function PropertyForm({
       // CREATING from scratch
       reset({
         address: "",
-        year: new Date().getFullYear(),
+        year: "",
         buildingSeries: "",
         floors: 1,
         imageUrl: "",
@@ -212,8 +200,8 @@ export function PropertyForm({
                     Указать другую точку
                 </Button>
                 <div className="space-y-1">
-                    <Label htmlFor="address-readonly">Найденный адрес</Label>
-                    <Input id="address-readonly" {...register("address")} readOnly className="bg-muted" placeholder="Адрес появится здесь после выбора точки"/>
+                    <Label htmlFor="address">Найденный адрес (можно изменить)</Label>
+                    <Input id="address" {...register("address")} placeholder="Адрес появится здесь..."/>
                     {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
                 </div>
                 {/* Hidden inputs for validation */}
@@ -224,7 +212,7 @@ export function PropertyForm({
              <div className="grid grid-cols-2 gap-4">
                  <div className="space-y-1">
                     <Label htmlFor="year">Год постройки</Label>
-                    <Input id="year" type="number" {...register("year")} />
+                    <Input id="year" type="text" {...register("year")} placeholder="ГГГГ или ГГГГ-ГГГГ"/>
                     {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
                 </div>
                 <div className="space-y-1">

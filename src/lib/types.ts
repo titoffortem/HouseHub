@@ -16,7 +16,7 @@ export type FloorPlan = {
 export type House = {
   address: string;
   coordinates: Coordinates;
-  year: number;
+  year: string;
   buildingSeries: string[];
   floors: number;
   imageUrl: string;
