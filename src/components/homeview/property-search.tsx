@@ -85,9 +85,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
     // Don't clear city to allow switching between search types with location
     onSearch({ searchTerm: "", searchType: value, city, searchAllMap });
 
-    if (value === 'year' || value === 'buildingSeries') {
-      setIsSecondaryPanelOpen(true);
-    } else {
+    if (value === 'address') {
       setIsSecondaryPanelOpen(false);
     }
   };
@@ -108,7 +106,7 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
         <div className="relative flex-grow flex items-center">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           {searchType === 'year' ? (
-              <div className="flex w-full items-center">
+              <div className="flex w-full items-center" onFocus={() => setIsSecondaryPanelOpen(true)}>
                   <Input
                       type="number"
                       placeholder="От"
@@ -139,6 +137,11 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onFocus={() => {
+                    if (searchType === 'buildingSeries') {
+                      setIsSecondaryPanelOpen(true)
+                    }
+                  }}
               />
           )}
         </div>
