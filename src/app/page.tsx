@@ -85,54 +85,78 @@ export default function Home() {
     }
   }, [allHouses, selectedHouse]);
 
-  const handleSearch = (searchTerm: string, searchType: string) => {
+  const handleSearch = (params: {
+    searchTerm: string;
+    searchType: string;
+    city: string;
+    region: string;
+    searchAllMap: boolean;
+  }) => {
+    const { searchTerm, searchType, city, region, searchAllMap } = params;
+
     if (!allHouses) return;
 
-    if (!searchTerm || searchTerm.trim() === "-") {
-      setFilteredHouses(null);
-      return;
+    const hasTerm = searchTerm && searchTerm.trim() !== '' && searchTerm.trim() !== '-';
+    const hasLocation = city.trim() || region.trim();
+    
+    // If no criteria for any search type, show all houses.
+    if (!hasTerm && (searchType !== 'year' || !hasLocation)) {
+        setFilteredHouses(null);
+        return;
     }
 
     const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
+    const lowercasedCity = city.toLowerCase().trim();
+    const lowercasedRegion = region.toLowerCase().trim();
 
     const results = allHouses.filter((house) => {
-      switch (searchType) {
-        case "year": {
-          const term = searchTerm.trim();
-          // Check for range
-          if (term.includes("-")) {
-            const [fromStr, toStr] = term.split("-");
-            const from = fromStr ? parseInt(fromStr, 10) : null;
-            const to = toStr ? parseInt(toStr, 10) : null;
-            const houseYear = house.year;
+        let mainFilterPass = true;
+        let locationFilterPass = true;
 
-            const isFromValid = from !== null && !isNaN(from);
-            const isToValid = to !== null && !isNaN(to);
+        if (hasTerm) {
+            switch (searchType) {
+                case "year": {
+                    const term = searchTerm.trim();
+                    if (term.includes("-")) {
+                        const [fromStr, toStr] = term.split("-");
+                        const from = fromStr ? parseInt(fromStr, 10) : null;
+                        const to = toStr ? parseInt(toStr, 10) : null;
+                        const houseYear = house.year;
+                        const isFromValid = from !== null && !isNaN(from);
+                        const isToValid = to !== null && !isNaN(to);
 
-            if (isFromValid && isToValid) {
-              return houseYear >= from && houseYear <= to;
-            } else if (isFromValid) {
-              return houseYear >= from;
-            } else if (isToValid) {
-              return houseYear <= to;
+                        if (isFromValid && isToValid) {
+                            mainFilterPass = houseYear >= from && houseYear <= to;
+                        } else if (isFromValid) {
+                            mainFilterPass = houseYear >= from;
+                        } else if (isToValid) {
+                            mainFilterPass = houseYear <= to;
+                        }
+                    } else {
+                        const year = parseInt(term, 10);
+                        if (!isNaN(year)) {
+                            mainFilterPass = house.year === year;
+                        }
+                    }
+                    break;
+                }
+                case "buildingSeries":
+                    mainFilterPass = house.buildingSeries.toLowerCase().includes(lowercasedSearchTerm);
+                    break;
+                default: // address
+                    mainFilterPass = house.address.toLowerCase().includes(lowercasedSearchTerm);
+                    break;
             }
-            return false;
-          } else {
-            // Single year search
-            const year = parseInt(term, 10);
-            if (!isNaN(year)) {
-              return house.year === year;
-            }
-            return false;
-          }
         }
-        case "buildingSeries":
-          return house.buildingSeries
-            .toLowerCase()
-            .includes(lowercasedSearchTerm);
-        default: // address
-          return house.address.toLowerCase().includes(lowercasedSearchTerm);
-      }
+        
+        if (searchType === 'year' && !searchAllMap && hasLocation) {
+            const houseAddressLower = house.address.toLowerCase();
+            const cityMatch = lowercasedCity ? houseAddressLower.includes(lowercasedCity) : true;
+            const regionMatch = lowercasedRegion ? houseAddressLower.includes(lowercasedRegion) : true;
+            locationFilterPass = cityMatch && regionMatch;
+        }
+        
+        return mainFilterPass && locationFilterPass;
     });
 
     setFilteredHouses(results);

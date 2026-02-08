@@ -12,9 +12,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Separator } from "../ui/separator";
 
 interface PropertySearchProps {
-  onSearch: (searchTerm: string, searchType: string) => void;
+  onSearch: (params: {
+    searchTerm: string;
+    searchType: string;
+    city: string;
+    region: string;
+    searchAllMap: boolean;
+  }) => void;
 }
 
 export function PropertySearch({ onSearch }: PropertySearchProps) {
@@ -22,36 +31,47 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
   const [yearFrom, setYearFrom] = React.useState("");
   const [yearTo, setYearTo] = React.useState("");
   const [searchType, setSearchType] = React.useState("address");
+  const [city, setCity] = React.useState("");
+  const [region, setRegion] = React.useState("");
+  const [searchAllMap, setSearchAllMap] = React.useState(true);
 
   const handleSearch = () => {
+    let term = searchTerm;
     if (searchType === "year") {
       // For single year, user can just fill the 'From' field.
       // For range, they fill both.
       if (yearFrom && !yearTo) {
-        onSearch(yearFrom, searchType);
+        term = yearFrom;
       } else {
-        const term = `${yearFrom}-${yearTo}`;
-        onSearch(term, searchType);
+        term = `${yearFrom}-${yearTo}`;
       }
-    } else {
-      onSearch(searchTerm, searchType);
     }
+    onSearch({ searchTerm: term, searchType, city, region, searchAllMap });
   };
   
   const handleClear = () => {
     setSearchTerm("");
     setYearFrom("");
     setYearTo("");
-    onSearch("", searchType);
+    setCity("");
+    setRegion("");
+    setSearchAllMap(true);
+    onSearch({ searchTerm: "", searchType, city: "", region: "", searchAllMap: true });
   };
 
   const handleSearchTypeChange = (value: string) => {
     setSearchType(value);
-    handleClear(); // Clear inputs when changing search type
+    setSearchTerm("");
+    setYearFrom("");
+    setYearTo("");
+    setCity("");
+    setRegion("");
+    setSearchAllMap(true);
+    onSearch({ searchTerm: "", searchType: value, city: "", region: "", searchAllMap: true });
   };
 
   return (
-    <div className="w-full max-w-lg">
+    <div className="w-full max-w-xl space-y-2">
       <div className="flex items-center gap-2 rounded-lg bg-background p-1 shadow-sm border">
         <Select value={searchType} onValueChange={handleSearchTypeChange}>
           <SelectTrigger className="w-[120px] h-9 border-0 focus:ring-0 focus:ring-offset-0 bg-transparent shadow-none text-muted-foreground">
@@ -106,6 +126,32 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
             <X className="h-5 w-5" />
         </Button>
       </div>
+       {searchType === 'year' && (
+        <div className="flex items-center gap-2 rounded-lg bg-background p-1 shadow-sm border text-sm">
+            <Input 
+                type="text"
+                placeholder="Город"
+                className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                disabled={searchAllMap}
+            />
+             <Separator orientation="vertical" className="h-6" />
+            <Input 
+                type="text"
+                placeholder="Область/Регион"
+                className="h-9 border-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                disabled={searchAllMap}
+            />
+             <Separator orientation="vertical" className="h-6" />
+            <div className="flex items-center space-x-2 whitespace-nowrap px-3">
+                <Checkbox id="all-map" checked={searchAllMap} onCheckedChange={(checked) => setSearchAllMap(!!checked)} />
+                <Label htmlFor="all-map" className="font-normal text-muted-foreground">По всей карте</Label>
+            </div>
+        </div>
+      )}
     </div>
   );
 }

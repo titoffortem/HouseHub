@@ -16,7 +16,13 @@ import Image from "next/image";
 import { PropertySearch } from "./property-search";
 
 interface HeaderProps {
-  onSearch: (searchTerm: string, searchType: string) => void;
+  onSearch: (params: {
+    searchTerm: string;
+    searchType: string;
+    city: string;
+    region: string;
+    searchAllMap: boolean;
+  }) => void;
 }
 
 
