@@ -42,7 +42,8 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
       if (
         searchContainerRef.current &&
         !searchContainerRef.current.contains(target) &&
-        !target.closest('[data-radix-popper-content-wrapper]')
+        !target.closest('[data-radix-popper-content-wrapper]') &&
+        !target.closest('[data-leaftlet-container]') // Assuming map container has this attribute
       ) {
         setIsSecondaryPanelOpen(false);
       }
@@ -148,10 +149,10 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
               />
           )}
         </div>
-        <Button onClick={handleSearch} variant="accent" size="sm">
+        <Button onClick={handleSearch} variant="accent" size="sm" className="flex-shrink-0">
           Поиск
         </Button>
-         <Button onClick={handleClear} variant="ghost" size="icon" className="h-8 w-8">
+         <Button onClick={handleClear} variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
             <X className="h-5 w-5" />
         </Button>
       </div>
