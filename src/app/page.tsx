@@ -26,6 +26,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { PropertySearch } from "@/components/homeview/property-search";
 import { SearchResultsList } from "@/components/homeview/search-results-list";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<
@@ -49,8 +50,8 @@ export default function Home() {
   const [pickingToastId, setPickingToastId] = React.useState<
     string | undefined
   >();
-  const [isResultsListOpen, setIsResultsListOpen] = React.useState(false);
   const [returnToList, setReturnToList] = React.useState(false);
+  const [panelView, setPanelView] = React.useState<'list' | 'details' | null>(null);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -85,6 +86,7 @@ export default function Home() {
         // If the house is not in the list anymore, it means it was deleted.
         // Deselect it to close the details panel.
         setSelectedHouse(null);
+        setPanelView(null);
       }
     }
   }, [allHouses, selectedHouse]);
@@ -96,13 +98,13 @@ export default function Home() {
     searchAllMap: boolean;
   }) => {
     const { searchTerm, searchType, city, searchAllMap } = params;
-
+    
     if (!allHouses) return;
-
-    // Reset list view when a new search is initiated
-    setIsResultsListOpen(false);
+    
+    setPanelView(null);
+    setSelectedHouse(null);
     setReturnToList(false);
-
+    
     const hasTerm = searchTerm.trim() !== "" && searchTerm.trim() !== "-";
     const hasLocation = !searchAllMap && city.trim() !== "";
 
@@ -110,7 +112,7 @@ export default function Home() {
       setFilteredHouses(null);
       return;
     }
-
+    
     const lowercasedSearchTerm = searchTerm.toLowerCase().trim();
     const lowercasedCity = city.toLowerCase().trim();
 
@@ -154,28 +156,35 @@ export default function Home() {
           return true;
       }
     });
-
+    
     setFilteredHouses(results);
   };
 
   const handleSelectHouse = (house: HouseWithId) => {
     setSelectedHouse(house);
+    setPanelView('details');
     setReturnToList(false);
   };
 
   const handleSelectHouseFromList = (house: HouseWithId) => {
     setSelectedHouse(house);
-    setIsResultsListOpen(false); // Close list after selection
+    setPanelView('details');
     setReturnToList(true);
   };
-
-  const handlePropertySheetOpenChange = (isOpen: boolean) => {
+  
+  const handlePanelOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
-      setSelectedHouse(null);
-      if (returnToList && filteredHouses && filteredHouses.length > 0) {
-        setIsResultsListOpen(true);
+      // This logic is when user clicks the 'X' on the sheet.
+      if (panelView === 'details' && returnToList) {
+          // If they were viewing details from a list, go back to the list.
+          setPanelView('list');
+          setSelectedHouse(null); // Deselect house to hide details view
+      } else {
+          // Otherwise, just close everything.
+          setPanelView(null);
+          setSelectedHouse(null);
+          setReturnToList(false);
       }
-      setReturnToList(false);
     }
   };
 
@@ -393,6 +402,8 @@ export default function Home() {
     toast({
       title: "Дом успешно удален",
     });
+    setPanelView(null);
+    setSelectedHouse(null);
   };
 
   return (
@@ -416,17 +427,10 @@ export default function Home() {
             isPickingLocation={isPickingLocation}
           />
         )}
-        <PropertyDetails
-          house={selectedHouse}
-          open={!!selectedHouse}
-          onOpenChange={handlePropertySheetOpenChange}
-          isAdmin={isAdmin}
-          onEdit={handleOpenForm}
-          onDelete={handleDeleteHouse}
-        />
+        
         <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-2">
-          {filteredHouses && filteredHouses.length > 0 && (
-            <Button size="lg" variant="secondary" onClick={() => setIsResultsListOpen(true)}>
+          {filteredHouses && filteredHouses.length > 0 && !panelView && (
+            <Button size="lg" variant="secondary" onClick={() => setPanelView('list')}>
               <List className="mr-2 h-5 w-5" /> Показать список ({filteredHouses.length})
             </Button>
           )}
@@ -436,6 +440,30 @@ export default function Home() {
             </Button>
           )}
         </div>
+
+        <Sheet open={!!panelView} onOpenChange={handlePanelOpenChange}>
+          <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col" side="left">
+            <div style={{ display: panelView === 'list' ? 'flex' : 'none' }} className="h-full w-full flex-col">
+              {filteredHouses && (
+                <SearchResultsList
+                  houses={filteredHouses}
+                  onSelectHouse={handleSelectHouseFromList}
+                />
+              )}
+            </div>
+            <div style={{ display: panelView === 'details' ? 'flex' : 'none' }} className="h-full w-full flex-col">
+              {selectedHouse && (
+                <PropertyDetails
+                  house={selectedHouse}
+                  isAdmin={isAdmin}
+                  onEdit={handleOpenForm}
+                  onDelete={handleDeleteHouse}
+                />
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
+
         {isAdmin && (
           <PropertyForm
             open={isFormOpen}
@@ -445,14 +473,6 @@ export default function Home() {
             initialData={editingHouse}
             onSetIsPickingLocation={handleSetIsPickingLocation}
             pickedCoords={pickedCoords}
-          />
-        )}
-        {filteredHouses && (
-          <SearchResultsList
-            houses={filteredHouses}
-            open={isResultsListOpen}
-            onOpenChange={setIsResultsListOpen}
-            onSelectHouse={handleSelectHouseFromList}
           />
         )}
       </main>

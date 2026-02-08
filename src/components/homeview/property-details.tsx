@@ -1,7 +1,5 @@
 
 import {
-  Sheet,
-  SheetContent,
   SheetHeader,
   SheetTitle,
   SheetFooter,
@@ -25,8 +23,6 @@ import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 
 interface PropertyDetailsProps {
   house: HouseWithId | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   isAdmin: boolean;
   onEdit: (house: HouseWithId) => void;
   onDelete: (houseId: string) => void;
@@ -52,8 +48,6 @@ const DetailItem = ({
 
 export function PropertyDetails({
   house,
-  open,
-  onOpenChange,
   isAdmin,
   onEdit,
   onDelete,
@@ -62,98 +56,92 @@ export function PropertyDetails({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Close the viewer if the main sheet is closed
-    if (!open) {
+    // Close the viewer if the house changes (or becomes null)
+    if (!house) {
       setIsViewerOpen(false);
     }
-  }, [open]);
+  }, [house]);
 
   if (!house) return null;
 
   const handleConfirmDelete = () => {
     onDelete(house.id);
     setIsDeleteDialogOpen(false);
-    onOpenChange(false); // Close the details sheet after deletion
   };
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full sm:w-[540px] p-0 flex flex-col" side="left">
-          <ScrollArea className="flex-grow">
-            <FloorPlan
-              src={house.imageUrl}
-              alt={`Фото ${house.address}`}
-            />
-            <div className="p-6">
-              <SheetHeader>
-                <SheetTitle className="font-headline text-2xl">
-                  {house.address}
-                </SheetTitle>
-              </SheetHeader>
-            </div>
-            <Separator />
-            <div className="p-6">
-              <h3 className="text-lg font-headline font-semibold mb-4">
-                Детали объекта
-              </h3>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-6">
-                <DetailItem
-                  icon={<Calendar className="h-5 w-5" />}
-                  label="Год постройки"
-                  value={house.year}
-                />
-                <DetailItem
-                  icon={<Building className="h-5 w-5" />}
-                  label="Серия здания"
-                  value={house.buildingSeries}
-                />
-                <div className="flex items-center justify-between col-span-2">
-                   <DetailItem
-                    icon={<ChevronsUpDown className="h-5 w-5" />}
-                    label="Этажность"
-                    value={house.floors}
-                  />
-                  <Button variant="outline" size="sm" onClick={() => setIsViewerOpen(true)}>
-                    Посмотреть планировки
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </ScrollArea>
-          {isAdmin && (
-            <>
-              <Separator />
-              <SheetFooter className="p-4 flex-shrink-0">
-                <div className="flex w-full gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => onEdit(house)}
-                  >
-                    <Pencil className="mr-2 h-4 w-4" /> Редактировать
-                  </Button>
-                   <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={() => setIsDeleteDialogOpen(true)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" /> Удалить
-                  </Button>
-                </div>
-              </SheetFooter>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
-      {house && (
-        <FloorPlanViewer
-          house={house}
-          open={isViewerOpen}
-          onOpenChange={setIsViewerOpen}
+      <ScrollArea className="flex-grow">
+        <FloorPlan
+          src={house.imageUrl}
+          alt={`Фото ${house.address}`}
         />
+        <div className="p-6">
+          <SheetHeader>
+            <SheetTitle className="font-headline text-2xl">
+              {house.address}
+            </SheetTitle>
+          </SheetHeader>
+        </div>
+        <Separator />
+        <div className="p-6">
+          <h3 className="text-lg font-headline font-semibold mb-4">
+            Детали объекта
+          </h3>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+            <DetailItem
+              icon={<Calendar className="h-5 w-5" />}
+              label="Год постройки"
+              value={house.year}
+            />
+            <DetailItem
+              icon={<Building className="h-5 w-5" />}
+              label="Серия здания"
+              value={house.buildingSeries}
+            />
+            <div className="flex items-center justify-between col-span-2">
+               <DetailItem
+                icon={<ChevronsUpDown className="h-5 w-5" />}
+                label="Этажность"
+                value={house.floors}
+              />
+              <Button variant="outline" size="sm" onClick={() => setIsViewerOpen(true)}>
+                Посмотреть планировки
+              </Button>
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+      {isAdmin && (
+        <>
+          <Separator />
+          <SheetFooter className="p-4 flex-shrink-0">
+            <div className="flex w-full gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => onEdit(house)}
+              >
+                <Pencil className="mr-2 h-4 w-4" /> Редактировать
+              </Button>
+               <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => setIsDeleteDialogOpen(true)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Удалить
+              </Button>
+            </div>
+          </SheetFooter>
+        </>
       )}
-       {isAdmin && house && (
+      {/* These dialogs are portaled, so they can remain here */}
+      <FloorPlanViewer
+        house={house}
+        open={isViewerOpen}
+        onOpenChange={setIsViewerOpen}
+      />
+      {isAdmin && (
         <DeleteConfirmationDialog
           open={isDeleteDialogOpen}
           onOpenChange={setIsDeleteDialogOpen}
