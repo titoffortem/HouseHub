@@ -20,6 +20,7 @@ if (typeof window !== 'undefined') {
 interface MapComponentProps {
   houses: HouseWithId[];
   highlightedHouses: HouseWithId[] | null;
+  selectedHouse: HouseWithId | null;
   onSelectHouse: (house: HouseWithId) => void;
   onMapClick?: (latlng: { lat: number; lng: number }) => void;
   markerPosition?: [number, number] | null;
@@ -45,6 +46,7 @@ const highlightedStyle = {
 export default function MapComponent({
   houses,
   highlightedHouses,
+  selectedHouse,
   onSelectHouse,
   onMapClick,
   markerPosition,
@@ -103,6 +105,13 @@ export default function MapComponent({
     const clickHandler = (e: L.LeafletMouseEvent) => {
         if (isPickingLocation && onMapClick) {
             onMapClick(e.latlng);
+        } else if (!isPickingLocation) {
+            const target = e.originalEvent.target as HTMLElement;
+            // Hide search panel if click is on map canvas directly
+            if (target.classList.contains('leaflet-container')) {
+                 const event = new CustomEvent('map-clicked');
+                 window.dispatchEvent(event);
+            }
         }
     };
     
@@ -135,6 +144,28 @@ export default function MapComponent({
         map.panTo(markerPosition);
     }
   }, [markerPosition]);
+
+  // This effect pans and zooms the map to the selected house.
+  useEffect(() => {
+    const map = mapInstance.current;
+    if (!map || !selectedHouse) return;
+
+    const { coordinates } = selectedHouse;
+
+    if (coordinates.points.length > 0) {
+      if (coordinates.type === 'Point') {
+        const point = coordinates.points[0];
+        // For a single point, we can zoom in quite close.
+        map.setView([point.lat, point.lng], 17);
+      } else { // 'Polygon'
+        const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
+        const bounds = L.latLngBounds(latLngs);
+        if (bounds.isValid()) {
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+        }
+      }
+    }
+  }, [selectedHouse]);
 
 
   useEffect(() => {
@@ -183,7 +214,7 @@ export default function MapComponent({
       }
     });
     
-    if (highlightedHouses && highlightedHouses.length > 0 && mapInstance.current) {
+    if (highlightedHouses && highlightedHouses.length > 0 && !selectedHouse && mapInstance.current) {
         const boundsPoints: L.LatLng[] = [];
         highlightedHouses.forEach(house => {
              house.coordinates.points.forEach(p => {
@@ -197,7 +228,7 @@ export default function MapComponent({
     }
 
 
-  }, [houses, highlightedHouses, onSelectHouse, isPickingLocation]);
+  }, [houses, highlightedHouses, onSelectHouse, isPickingLocation, selectedHouse]);
   
   return <div ref={mapRef} className="h-full w-full z-0" />;
 }

@@ -16,12 +16,12 @@ import Image from "next/image";
 import { PropertySearch } from "./property-search";
 
 interface HeaderProps {
-    onSearch: (params: {
-        searchTerm: string;
-        searchType: string;
-        city: string;
-        searchAllMap: boolean;
-    }) => void;
+  onSearch: (params: {
+    searchTerm: string;
+    searchType: string;
+    city: string;
+    searchAllMap: boolean;
+  }) => void;
 }
 
 export function Header({ onSearch }: HeaderProps) {
@@ -38,18 +38,18 @@ export function Header({ onSearch }: HeaderProps) {
   };
 
   return (
-    <header className="flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
-      <div className="flex items-center gap-2 overflow-hidden">
+    <header className="relative flex h-auto items-center justify-between gap-4 border-b bg-card px-4 md:px-6 z-20 shrink-0 py-2">
+      <div className="flex items-center gap-2">
         <Image src="https://sun9-8.userapi.com/s/v1/ig2/rmZGJAqMA5y7TrFTYnndwLrcU7wb72mnvv6Z2LUgpsMdCNL097Kn9gvW9w__rsBMEY20A4Tt-ecLIPEq4qCWPtPx.jpg?quality=95&as=32x10,48x15,72x22,108x34,160x50,240x75,360x112,448x140&from=bu&cs=448x0" alt="Логотип HouseHub" width={140} height={40} className="relative -left-0.5" />
       </div>
       
-      <div className="flex-1 flex justify-center">
+      <div className="flex-1 flex justify-center px-4">
         <div className="w-full max-w-xl">
            <PropertySearch onSearch={onSearch} />
         </div>
       </div>
 
-      <div>
+      <div className="flex items-center">
         {isUserLoading ? (
           <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
         ) : user ? (

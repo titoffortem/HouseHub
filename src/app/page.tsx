@@ -24,7 +24,6 @@ import {
   type FormValues,
 } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
-import { PropertySearch } from "@/components/homeview/property-search";
 import { SearchResultsList } from "@/components/homeview/search-results-list";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
@@ -407,9 +406,9 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-background">
+    <div className="relative h-screen w-full bg-background flex flex-col">
       <Header onSearch={handleSearch} />
-      <main className="relative h-[calc(100vh-4rem)] w-full">
+      <main className="relative flex-1 grid">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             Загрузка домов...
@@ -418,6 +417,7 @@ export default function Home() {
           <Map
             houses={allHouses || []}
             highlightedHouses={filteredHouses}
+            selectedHouse={selectedHouse}
             onSelectHouse={handleSelectHouse}
             onMapClick={handleMapClick}
             markerPosition={markerPosition}

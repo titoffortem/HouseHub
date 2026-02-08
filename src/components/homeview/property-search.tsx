@@ -38,20 +38,25 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
-      // If click is outside the referenced container AND not inside a radix popper (for the Select dropdown)
       if (
         searchContainerRef.current &&
         !searchContainerRef.current.contains(target) &&
-        !target.closest('[data-radix-popper-content-wrapper]') &&
-        !target.closest('[data-leaftlet-container]') // Assuming map container has this attribute
+        !target.closest('[data-radix-popper-content-wrapper]')
       ) {
         setIsSecondaryPanelOpen(false);
       }
     };
+    
+    const handleMapClick = () => {
+        setIsSecondaryPanelOpen(false);
+    }
 
     document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener('map-clicked', handleMapClick);
+
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener('map-clicked', handleMapClick);
     };
   }, []);
 
@@ -158,10 +163,10 @@ export function PropertySearch({ onSearch }: PropertySearchProps) {
       </div>
       <div
         className={cn(
-          "absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border text-sm transition-all duration-200 ease-in-out",
+          "absolute top-full z-10 mt-2 w-full flex items-center gap-2 rounded-lg bg-card p-1 shadow-sm border text-sm transition-all duration-200 ease-in-out origin-top",
           (isSecondaryPanelOpen && (searchType === 'year' || searchType === 'buildingSeries'))
-          ? 'opacity-100 translate-y-0'
-          : 'opacity-0 -translate-y-4 pointer-events-none'
+          ? 'opacity-100 scale-y-100'
+          : 'opacity-0 scale-y-0 pointer-events-none'
         )}
       >
         <Input 
