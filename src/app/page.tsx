@@ -189,6 +189,7 @@ export default function Home() {
           setPanelView(null);
           setSelectedHouse(null);
           setReturnToList(false);
+          // Keep map focused
       }
     }
   };
@@ -432,12 +433,14 @@ export default function Home() {
           />
         )}
         
-        <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-2">
+        <div className="absolute bottom-4 left-4 z-10">
           {filteredHouses && filteredHouses.length > 0 && !panelView && (
             <Button size="lg" variant="secondary" onClick={() => setPanelView('list')}>
               <List className="mr-2 h-5 w-5" /> Показать список ({filteredHouses.length})
             </Button>
           )}
+        </div>
+        <div className="absolute bottom-4 right-4 z-10">
           {isAdmin && (
             <Button size="lg" className="bg-black text-white hover:bg-black/90" onClick={() => handleOpenForm()}>
               <Plus className="mr-2 h-5 w-5" /> Добавить дом
