@@ -24,6 +24,7 @@ import {
   type FormValues,
 } from "@/components/homeview/property-form";
 import { useToast } from "@/hooks/use-toast";
+import { PropertySearch } from "@/components/homeview/property-search";
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<
@@ -391,8 +392,11 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-full bg-background">
-      <Header onSearch={handleSearch} />
+      <Header />
       <main className="relative h-[calc(100vh-4rem)] w-full">
+        <div className="absolute top-4 left-1/2 z-10 w-full max-w-xl -translate-x-1/2 px-4">
+          <PropertySearch onSearch={handleSearch} />
+        </div>
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             Загрузка домов...
