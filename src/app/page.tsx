@@ -34,6 +34,9 @@ export default function Home() {
   const [selectedHouse, setSelectedHouse] = React.useState<HouseWithId | null>(
     null
   );
+  const [mapFocusHouse, setMapFocusHouse] = React.useState<HouseWithId | null>(
+    null
+  );
   const [isFormOpen, setIsFormOpen] = React.useState(false);
   const [editingHouse, setEditingHouse] = React.useState<HouseWithId | null>(
     null
@@ -102,6 +105,7 @@ export default function Home() {
     
     setPanelView(null);
     setSelectedHouse(null);
+    setMapFocusHouse(null);
     setReturnToList(false);
     
     const hasTerm = searchTerm.trim() !== "" && searchTerm.trim() !== "-";
@@ -161,12 +165,14 @@ export default function Home() {
 
   const handleSelectHouse = (house: HouseWithId) => {
     setSelectedHouse(house);
+    setMapFocusHouse(house);
     setPanelView('details');
     setReturnToList(false);
   };
 
   const handleSelectHouseFromList = (house: HouseWithId) => {
     setSelectedHouse(house);
+    setMapFocusHouse(house);
     setPanelView('details');
     setReturnToList(true);
   };
@@ -418,6 +424,7 @@ export default function Home() {
             houses={allHouses || []}
             highlightedHouses={filteredHouses}
             selectedHouse={selectedHouse}
+            mapFocusHouse={mapFocusHouse}
             onSelectHouse={handleSelectHouse}
             onMapClick={handleMapClick}
             markerPosition={markerPosition}

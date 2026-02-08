@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useRef } from 'react';
@@ -21,6 +22,7 @@ interface MapComponentProps {
   houses: HouseWithId[];
   highlightedHouses: HouseWithId[] | null;
   selectedHouse: HouseWithId | null;
+  mapFocusHouse: HouseWithId | null;
   onSelectHouse: (house: HouseWithId) => void;
   onMapClick?: (latlng: { lat: number; lng: number }) => void;
   markerPosition?: [number, number] | null;
@@ -47,6 +49,7 @@ export default function MapComponent({
   houses,
   highlightedHouses,
   selectedHouse,
+  mapFocusHouse,
   onSelectHouse,
   onMapClick,
   markerPosition,
@@ -145,29 +148,45 @@ export default function MapComponent({
     }
   }, [markerPosition]);
 
-  // This effect pans and zooms the map to the selected house.
+  // This effect handles all map zooming.
   useEffect(() => {
     const map = mapInstance.current;
-    if (!map || !selectedHouse) return;
+    if (!map) return;
 
-    const { coordinates } = selectedHouse;
-
-    if (coordinates.points.length > 0) {
-      if (coordinates.type === 'Point') {
-        const point = coordinates.points[0];
-        // For a single point, we can zoom in quite close.
-        map.setView([point.lat, point.lng], 17);
-      } else { // 'Polygon'
-        const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
-        const bounds = L.latLngBounds(latLngs);
-        if (bounds.isValid()) {
+    // Priority 1: Focus on a single house if one is designated.
+    if (mapFocusHouse) {
+      const { coordinates } = mapFocusHouse;
+      if (coordinates.points.length > 0) {
+        if (coordinates.type === 'Point') {
+          const point = coordinates.points[0];
+          map.setView([point.lat, point.lng], 17);
+        } else { // 'Polygon'
+          const latLngs = coordinates.points.map(p => [p.lat, p.lng] as [number, number]);
+          const bounds = L.latLngBounds(latLngs);
+          if (bounds.isValid()) {
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+          }
         }
       }
+      return; // Stop here if we're focusing on a single house
     }
-  }, [selectedHouse]);
 
+    // Priority 2: If no specific focus, zoom to fit all highlighted houses from search results.
+    if (highlightedHouses && highlightedHouses.length > 0) {
+      const boundsPoints: L.LatLng[] = [];
+      highlightedHouses.forEach(house => {
+        house.coordinates.points.forEach(p => {
+          boundsPoints.push(L.latLng(p.lat, p.lng));
+        });
+      });
+      const bounds = new L.LatLngBounds(boundsPoints);
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+      }
+    }
+  }, [mapFocusHouse, highlightedHouses]);
 
+  // This effect ONLY draws layers on the map.
   useEffect(() => {
     const layers = layersRef.current;
     if (!layers || !mapInstance.current) return;
@@ -213,22 +232,7 @@ export default function MapComponent({
         }
       }
     });
-    
-    if (highlightedHouses && highlightedHouses.length > 0 && !selectedHouse && mapInstance.current) {
-        const boundsPoints: L.LatLng[] = [];
-        highlightedHouses.forEach(house => {
-             house.coordinates.points.forEach(p => {
-                boundsPoints.push(L.latLng(p.lat, p.lng));
-            });
-        });
-        const bounds = new L.LatLngBounds(boundsPoints);
-        if (bounds.isValid()) {
-            mapInstance.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
-        }
-    }
-
-
-  }, [houses, highlightedHouses, onSelectHouse, isPickingLocation, selectedHouse]);
+  }, [houses, highlightedHouses, onSelectHouse, isPickingLocation]);
   
   return <div ref={mapRef} className="h-full w-full z-0" />;
 }
