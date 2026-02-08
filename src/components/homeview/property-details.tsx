@@ -97,7 +97,7 @@ export function PropertyDetails({
             <DetailItem
               icon={<Building className="h-5 w-5" />}
               label="Серия здания"
-              value={house.buildingSeries}
+              value={Array.isArray(house.buildingSeries) ? house.buildingSeries.join(', ') : house.buildingSeries}
             />
             <div className="flex items-center justify-between col-span-2">
                <DetailItem

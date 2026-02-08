@@ -152,8 +152,19 @@ export default function Home() {
         }
         case "buildingSeries": {
           const searchSeries = lowercasedSearchTerm.split(',').map(s => s.trim()).filter(s => s);
-          const houseSeriesLower = house.buildingSeries.toLowerCase();
-          return searchSeries.some(s => houseSeriesLower.includes(s));
+          const houseSeries = house.buildingSeries;
+
+          if (Array.isArray(houseSeries)) {
+            // Check if any of the search terms is a substring of any of the house's series.
+            return searchSeries.some(searchTerm => 
+              houseSeries.some(houseTerm => houseTerm.toLowerCase().includes(searchTerm))
+            );
+          } else if (typeof houseSeries === 'string') { // Backward compatibility
+            const houseSeriesLower = (houseSeries as string).toLowerCase();
+            return searchSeries.some(s => houseSeriesLower.includes(s));
+          }
+          
+          return false;
         }
         default:
           return true;
@@ -362,7 +373,7 @@ export default function Home() {
       houseData = {
         address: values.address,
         year: values.year,
-        buildingSeries: values.buildingSeries,
+        buildingSeries: values.buildingSeries.split(',').map(s => s.trim()).filter(Boolean),
         floors: values.floors,
         imageUrl: values.imageUrl,
         floorPlans: values.floorPlans,

@@ -17,7 +17,7 @@ export type House = {
   address: string;
   coordinates: Coordinates;
   year: number;
-  buildingSeries: string;
+  buildingSeries: string[];
   floors: number;
   imageUrl: string;
   floorPlans: FloorPlan[];

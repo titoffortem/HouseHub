@@ -64,7 +64,7 @@ export function SearchResultsList({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Building className="h-4 w-4" />
-                    <span>{house.buildingSeries}</span>
+                    <span>{Array.isArray(house.buildingSeries) ? house.buildingSeries.join(', ') : house.buildingSeries}</span>
                   </div>
                 </div>
               </div>

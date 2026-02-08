@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm, useFieldArray, Controller } from "react-hook-form";
@@ -117,6 +118,7 @@ export function PropertyForm({
       // EDITING mode
       reset({
         ...initialData,
+        buildingSeries: Array.isArray(initialData.buildingSeries) ? initialData.buildingSeries.join(', ') : (initialData.buildingSeries || ''),
         inputType: 'address',
         lat: initialData.coordinates.points[0]?.lat,
         lng: initialData.coordinates.points[0]?.lng,
@@ -227,7 +229,7 @@ export function PropertyForm({
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="buildingSeries">Серия здания</Label>
-                    <Input id="buildingSeries" {...register("buildingSeries")} />
+                    <Input id="buildingSeries" {...register("buildingSeries")} placeholder="Несколько серий через запятую"/>
                     {errors.buildingSeries && <p className="text-destructive text-sm">{errors.buildingSeries.message}</p>}
                 </div>
             </div>
