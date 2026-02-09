@@ -228,7 +228,7 @@ export default function Home() {
     setOsmFetchedCoords(null);
   };
 
-  const handleFormClose = () => {
+  const handleFormClose = React.useCallback(() => {
     setIsFormOpen(false);
     setEditingHouse(null);
     setIsPickingLocation(false);
@@ -239,7 +239,7 @@ export default function Home() {
       dismiss(pickingToastId);
       setPickingToastId(undefined);
     }
-  };
+  }, [pickingToastId, dismiss]);
 
   const handleMapClick = (latlng: { lat: number; lng: number }) => {
     if (isPickingLocation) {
@@ -384,7 +384,7 @@ export default function Home() {
     }
 }, [toast]);
 
-  const handleFormSubmit = async (values: FormValues) => {
+  const handleFormSubmit = React.useCallback(async (values: FormValues) => {
     if (!firestore) return;
 
     let houseData: House;
@@ -403,7 +403,7 @@ export default function Home() {
             };
         }
         // Priority 3: We are editing an existing house and DID NOT pick a new location or fetch from OSM.
-        else if (editingHouse) {
+        else if (editingHouse && !pickedCoords) {
             coordinates = editingHouse.coordinates;
         }
         // Priority 4: We are creating a new house by typing an address (no map click, no OSM ID).
@@ -495,7 +495,7 @@ export default function Home() {
       toast({ title: "Дом успешно добавлен" });
     }
     handleFormClose();
-  };
+  }, [firestore, toast, editingHouse, pickedCoords, osmFetchedCoords, handleFormClose]);
 
   const handleDeleteHouse = (houseId: string) => {
     if (!firestore || !user) {
