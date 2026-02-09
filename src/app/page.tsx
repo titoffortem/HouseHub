@@ -322,14 +322,17 @@ export default function Home() {
     }
 
     try {
-        const response = await fetch(`https://overpass-api.de/api/interpreter?data=[out:json];(way(${osmId}););out geom;`);
+        // Use the Russian Overpass mirror and a more robust query for ways and relations
+        const response = await fetch(`https://overpass.openstreetmap.ru/api/interpreter?data=[out:json];(rel(${osmId});way(${osmId}););(._;>;);out geom;`);
         if (!response.ok) {
             throw new Error('OSM Overpass API request failed');
         }
         const data = await response.json();
-        const element = data.elements?.[0];
+        
+        // Find the first element with geometry, which will be a `way`.
+        const elementWithGeometry = data.elements?.find((el: any) => el.type === 'way' && el.geometry);
 
-        if (!element || !element.geometry || element.geometry.length === 0) {
+        if (!elementWithGeometry) {
             toast({
                 variant: "destructive",
                 title: "Ничего не найдено",
@@ -340,7 +343,7 @@ export default function Home() {
 
         const coordinates: Coordinates = {
             type: 'Polygon',
-            points: element.geometry.map((p: { lat: number; lon: number }) => ({ lat: p.lat, lng: p.lon }))
+            points: elementWithGeometry.geometry.map((p: { lat: number; lon: number }) => ({ lat: p.lat, lng: p.lon }))
         };
         setOsmFetchedCoords(coordinates);
         
@@ -359,7 +362,9 @@ export default function Home() {
           setMapFocusHouse(tempHouse);
         }
 
-        const tags = element.tags || {};
+        // The main element (way or relation) with the ID holds the tags.
+        const mainElement = data.elements?.find((el: any) => el.id.toString() === osmId);
+        const tags = mainElement?.tags || elementWithGeometry.tags || {};
         const street = tags['addr:street'] || '';
         const houseNumber = tags['addr:housenumber'] || '';
         const city = tags['addr:city'] || '';
@@ -403,7 +408,7 @@ export default function Home() {
             };
         }
         // Priority 3: We are editing an existing house and DID NOT pick a new location or fetch from OSM.
-        else if (editingHouse && !pickedCoords) {
+        else if (editingHouse) {
             coordinates = editingHouse.coordinates;
         }
         // Priority 4: We are creating a new house by typing an address (no map click, no OSM ID).
@@ -495,7 +500,7 @@ export default function Home() {
       toast({ title: "Дом успешно добавлен" });
     }
     handleFormClose();
-  }, [firestore, toast, editingHouse, pickedCoords, osmFetchedCoords, handleFormClose]);
+  }, [firestore, toast, editingHouse, pickedCoords, osmFetchedCoords, handleFormClose, handleFetchFromOSM]);
 
   const handleDeleteHouse = (houseId: string) => {
     if (!firestore || !user) {
@@ -593,3 +598,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
