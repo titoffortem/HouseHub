@@ -205,16 +205,16 @@ export function PropertyForm({
                         className="flex space-x-4 pt-1"
                     >
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="osm" id="r-osm" />
-                            <Label htmlFor="r-osm" className="font-normal">По OSM ID</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
                             <RadioGroupItem value="address" id="r-addr" />
                             <Label htmlFor="r-addr" className="font-normal">По адресу</Label>
                         </div>
                         <div className="flex items-center space-x-2">
                             <RadioGroupItem value="coords" id="r-coords" />
                             <Label htmlFor="r-coords" className="font-normal">По карте</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="osm" id="r-osm" />
+                            <Label htmlFor="r-osm" className="font-normal">По OSM ID</Label>
                         </div>
                     </RadioGroup>
                 )}
