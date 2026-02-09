@@ -26,7 +26,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { SearchResultsList } from "@/components/homeview/search-results-list";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { OpenStreetMapProvider } from "leaflet-geosearch";
 
 export default function Home() {
   const [filteredHouses, setFilteredHouses] = React.useState<
@@ -397,6 +396,7 @@ export default function Home() {
         } else {
             // Standard geocoding by address (for edits, manual adds, or as a reliable fallback for map clicks)
             if (values.address) {
+                const { OpenStreetMapProvider } = await import("leaflet-geosearch");
                 const provider = new OpenStreetMapProvider({
                   params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
                 });
