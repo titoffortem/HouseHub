@@ -28,6 +28,7 @@ const floorPlanSchema = z.object({
 });
 
 const formSchema = z.object({
+  osmId: z.string().optional(),
   address: z.string().min(1, "Адрес обязателен"),
   year: z.string().regex(/^\d{4}(?:-\d{4})?$/, { message: "Год должен быть в формате ГГГГ или ГГГГ-ГГГГ" }).min(1, "Год постройки обязателен"),
   buildingSeries: z.string().min(1, "Серия здания обязательна"),
@@ -59,6 +60,7 @@ interface PropertyFormProps {
   initialData?: HouseWithId | null;
   onSetIsPickingLocation: (isPicking: boolean) => void;
   pickedCoords: { lat: number; lng: number } | null;
+  onFetchFromOSM: (osmId: string) => Promise<Partial<FormValues> | null>;
 }
 
 export function PropertyForm({
@@ -68,7 +70,8 @@ export function PropertyForm({
   onReverseGeocode,
   initialData,
   onSetIsPickingLocation,
-  pickedCoords
+  pickedCoords,
+  onFetchFromOSM,
 }: PropertyFormProps) {
   const {
     register,
@@ -81,6 +84,7 @@ export function PropertyForm({
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      osmId: "",
       address: "",
       year: "",
       inputType: "address",
@@ -105,6 +109,7 @@ export function PropertyForm({
       // EDITING mode
       reset({
         ...initialData,
+        osmId: initialData.osmId || "",
         year: String(initialData.year),
         buildingSeries: Array.isArray(initialData.buildingSeries) ? initialData.buildingSeries.join(', ') : (initialData.buildingSeries || ''),
         inputType: 'address',
@@ -129,6 +134,7 @@ export function PropertyForm({
     } else {
       // CREATING from scratch
       reset({
+        osmId: "",
         address: "",
         year: "",
         buildingSeries: "",
@@ -141,6 +147,21 @@ export function PropertyForm({
       });
     }
   }, [open, initialData, pickedCoords, reset, setValue, onReverseGeocode]);
+
+  const handleFetchOsmData = async () => {
+    const osmId = watch('osmId');
+    if (osmId) {
+        const fetchedData = await onFetchFromOSM(osmId);
+        if (fetchedData) {
+            Object.entries(fetchedData).forEach(([key, value]) => {
+                if (value !== undefined) {
+                    setValue(key as keyof FormValues, value, { shouldValidate: true });
+                }
+            });
+        }
+    }
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -158,8 +179,24 @@ export function PropertyForm({
         <ScrollArea className="h-[65vh] overflow-y-auto">
           <form id="property-form" onSubmit={handleSubmit(onSubmit)} className="px-6 py-4 space-y-4">
             
+            <div className="flex items-end gap-2">
+                <div className="space-y-1 flex-grow">
+                    <Label htmlFor="osmId">OSM ID</Label>
+                    <Input id="osmId" {...register("osmId")} placeholder="ID объекта из OpenStreetMap" />
+                    {errors.osmId && <p className="text-destructive text-sm">{errors.osmId.message}</p>}
+                </div>
+                <Button 
+                    type="button" 
+                    variant="secondary"
+                    onClick={handleFetchOsmData}
+                >
+                    Загрузить
+                </Button>
+            </div>
+            <Separator />
+
             <div className="space-y-2">
-              <Label>Способ ввода</Label>
+              <Label>Способ ввода координат</Label>
                <Controller
                 control={control}
                 name="inputType"
@@ -175,11 +212,11 @@ export function PropertyForm({
                         className="flex space-x-4 pt-1"
                     >
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="address" id="r1" disabled={!!initialData}/>
+                            <RadioGroupItem value="address" id="r1" disabled={!!initialData || !!watch('osmId')}/>
                             <Label htmlFor="r1" className="font-normal">По адресу</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="coords" id="r2" disabled={!!initialData}/>
+                            <RadioGroupItem value="coords" id="r2" disabled={!!initialData || !!watch('osmId')}/>
                             <Label htmlFor="r2" className="font-normal">По карте</Label>
                         </div>
                     </RadioGroup>

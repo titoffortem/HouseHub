@@ -54,6 +54,7 @@ export default function Home() {
   >();
   const [returnToList, setReturnToList] = React.useState(false);
   const [panelView, setPanelView] = React.useState<'list' | 'details' | null>(null);
+  const [osmFetchedCoords, setOsmFetchedCoords] = React.useState<Coordinates | null>(null);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -224,6 +225,7 @@ export default function Home() {
     setPickedCoords(null);
     setMarkerPosition(null);
     setIsPickingLocation(false);
+    setOsmFetchedCoords(null);
   };
 
   const handleFormClose = () => {
@@ -232,6 +234,7 @@ export default function Home() {
     setIsPickingLocation(false);
     setPickedCoords(null);
     setMarkerPosition(null);
+    setOsmFetchedCoords(null);
     if (pickingToastId) {
       dismiss(pickingToastId);
       setPickingToastId(undefined);
@@ -308,6 +311,79 @@ export default function Home() {
     }
   }, [toast]);
 
+  const handleFetchFromOSM = React.useCallback(async (osmId: string): Promise<Partial<FormValues> | null> => {
+    if (!/^\d+$/.test(osmId)) {
+        toast({
+            variant: "destructive",
+            title: "Неверный ID",
+            description: "OSM ID должен состоять только из цифр.",
+        });
+        return null;
+    }
+
+    try {
+        const response = await fetch(`https://overpass-api.de/api/interpreter?data=[out:json];(way(${osmId}););out geom;`);
+        if (!response.ok) {
+            throw new Error('OSM Overpass API request failed');
+        }
+        const data = await response.json();
+        const element = data.elements?.[0];
+
+        if (!element || !element.geometry || element.geometry.length === 0) {
+            toast({
+                variant: "destructive",
+                title: "Ничего не найдено",
+                description: "Не удалось найти объект с таким ID или у него нет геометрии.",
+            });
+            return null;
+        }
+
+        const coordinates: Coordinates = {
+            type: 'Polygon',
+            points: element.geometry.map((p: { lat: number; lon: number }) => ({ lat: p.lat, lng: p.lon }))
+        };
+        setOsmFetchedCoords(coordinates);
+        
+        // Focus map on the fetched object
+        if (coordinates.points.length > 0) {
+          const tempHouse: HouseWithId = {
+            id: 'temp-focus',
+            coordinates,
+            address: '',
+            year: '',
+            buildingSeries: [],
+            floors: 0,
+            imageUrl: '',
+            floorPlans: []
+          };
+          setMapFocusHouse(tempHouse);
+        }
+
+        const tags = element.tags || {};
+        const street = tags['addr:street'] || '';
+        const houseNumber = tags['addr:housenumber'] || '';
+        const city = tags['addr:city'] || '';
+        const address = [city, street, houseNumber].filter(Boolean).join(', ');
+        
+        const floorsStr = tags['building:levels'];
+
+        return {
+            address: address || "Адрес не найден в тегах OSM",
+            year: tags['start_date'] || '',
+            floors: floorsStr ? parseInt(floorsStr, 10) : undefined,
+            osmId: osmId
+        };
+    } catch (error) {
+        console.error("OSM Fetch error:", error);
+        toast({
+            variant: "destructive",
+            title: "Ошибка загрузки из OSM",
+            description: "Произошла ошибка при запросе к Overpass API.",
+        });
+        return null;
+    }
+}, [toast]);
+
   const handleFormSubmit = async (values: FormValues) => {
     if (!firestore) return;
 
@@ -315,52 +391,54 @@ export default function Home() {
     let coordinates: Coordinates | undefined;
 
     try {
-      // --- Phase 1: Determine coordinates ---
+        if (osmFetchedCoords) {
+            coordinates = osmFetchedCoords;
+        } else {
+            // Standard geocoding by address (for edits, manual adds, or as a reliable fallback for map clicks)
+            if (values.address) {
+                const { OpenStreetMapProvider } = await import("leaflet-geosearch");
+                const provider = new OpenStreetMapProvider({
+                params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
+                });
+                const results = await provider.search({ query: values.address });
 
-      // Standard geocoding by address (for edits, manual adds, or as a reliable fallback for map clicks)
-      if (values.address) {
-        const { OpenStreetMapProvider } = await import("leaflet-geosearch");
-        const provider = new OpenStreetMapProvider({
-          params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
-        });
-        const results = await provider.search({ query: values.address });
+                if (results && results.length > 0) {
+                const result = results[0];
+                const geojson = (result.raw as any).geojson;
+                if (
+                    geojson &&
+                    (geojson.type === "Polygon" || geojson.type === "MultiPolygon")
+                ) {
+                    const polygonCoords =
+                    geojson.type === "Polygon"
+                        ? geojson.coordinates[0]
+                        : geojson.coordinates[0][0];
+                    coordinates = {
+                    type: "Polygon",
+                    points: polygonCoords.map((p: [number, number]) => ({
+                        lat: p[1],
+                        lng: p[0],
+                    })),
+                    };
+                } else {
+                    // If geocoding finds a result but no polygon, use its point.
+                    coordinates = {
+                    type: "Point",
+                    points: [{ lat: result.y, lng: result.x }],
+                    };
+                }
+                }
+            }
 
-        if (results && results.length > 0) {
-          const result = results[0];
-          const geojson = (result.raw as any).geojson;
-          if (
-            geojson &&
-            (geojson.type === "Polygon" || geojson.type === "MultiPolygon")
-          ) {
-            const polygonCoords =
-              geojson.type === "Polygon"
-                ? geojson.coordinates[0]
-                : geojson.coordinates[0][0];
-            coordinates = {
-              type: "Polygon",
-              points: polygonCoords.map((p: [number, number]) => ({
-                lat: p[1],
-                lng: p[0],
-              })),
-            };
-          } else {
-            // If geocoding finds a result but no polygon, use its point.
-            coordinates = {
-              type: "Point",
-              points: [{ lat: result.y, lng: result.x }],
-            };
-          }
+            // Fallback for new houses if all geocoding fails: use the clicked point.
+            if (!coordinates && editingHouse === null && pickedCoords) {
+                coordinates = {
+                    type: "Point",
+                    points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+                };
+            }
         }
-      }
-
-      // C. Final fallback for new houses if all geocoding fails: use the clicked point.
-      if (!coordinates && editingHouse === null && pickedCoords) {
-          coordinates = {
-              type: "Point",
-              points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
-          };
-      }
-
+      
       // If after all attempts, we still don't have coordinates, show an error.
       if (!coordinates) {
         toast({
@@ -383,6 +461,7 @@ export default function Home() {
       
       // --- Phase 2: Assemble and save data ---
       houseData = {
+        osmId: values.osmId || "",
         address: values.address,
         year: values.year,
         buildingSeries: values.buildingSeries.split(',').map(s => s.trim()).filter(Boolean),
@@ -439,22 +518,23 @@ export default function Home() {
     <div className="relative h-screen w-full bg-background flex flex-col">
       <Header onSearch={handleSearch} />
       <main className="relative flex-1 grid">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-full">
-            Загрузка домов...
+          <div className="relative h-full w-full">
+            {isLoading && (
+              <div className="absolute inset-0 bg-background/50 flex items-center justify-center z-20">
+                Загрузка домов...
+              </div>
+            )}
+            <Map
+              houses={allHouses || []}
+              highlightedHouses={filteredHouses}
+              selectedHouse={selectedHouse}
+              mapFocusHouse={mapFocusHouse}
+              onSelectHouse={handleSelectHouse}
+              onMapClick={handleMapClick}
+              markerPosition={markerPosition}
+              isPickingLocation={isPickingLocation}
+            />
           </div>
-        ) : (
-          <Map
-            houses={allHouses || []}
-            highlightedHouses={filteredHouses}
-            selectedHouse={selectedHouse}
-            mapFocusHouse={mapFocusHouse}
-            onSelectHouse={handleSelectHouse}
-            onMapClick={handleMapClick}
-            markerPosition={markerPosition}
-            isPickingLocation={isPickingLocation}
-          />
-        )}
         
         <div className="absolute bottom-4 left-4 z-10">
           {filteredHouses && filteredHouses.length > 0 && !panelView && (
@@ -503,6 +583,7 @@ export default function Home() {
             initialData={editingHouse}
             onSetIsPickingLocation={handleSetIsPickingLocation}
             pickedCoords={pickedCoords}
+            onFetchFromOSM={handleFetchFromOSM}
           />
         )}
       </main>

@@ -14,6 +14,7 @@ export type FloorPlan = {
 };
 
 export type House = {
+  osmId?: string;
   address: string;
   coordinates: Coordinates;
   year: string;
