@@ -37,7 +37,7 @@ const formSchema = z.object({
   floorPlans: z.array(floorPlanSchema),
   lat: z.coerce.number().optional(),
   lng: z.coerce.number().optional(),
-  inputType: z.enum(['address', 'coords']).default('address'),
+  inputType: z.enum(['osm', 'address', 'coords']).default('address'),
 }).superRefine((data, ctx) => {
     if (data.inputType === 'coords') {
         if (data.lat === undefined || Number.isNaN(data.lat)) {
@@ -46,6 +46,9 @@ const formSchema = z.object({
         if (data.lng === undefined || Number.isNaN(data.lng)) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['lng'], message: 'Долгота обязательна' });
         }
+    }
+    if (data.inputType === 'osm' && !data.osmId) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['osmId'], message: 'OSM ID обязателен' });
     }
 });
 
@@ -112,7 +115,7 @@ export function PropertyForm({
         osmId: initialData.osmId || "",
         year: String(initialData.year),
         buildingSeries: Array.isArray(initialData.buildingSeries) ? initialData.buildingSeries.join(', ') : (initialData.buildingSeries || ''),
-        inputType: 'address',
+        inputType: initialData.osmId ? 'osm' : 'address',
         lat: initialData.coordinates.points[0]?.lat,
         lng: initialData.coordinates.points[0]?.lng,
         floorPlans: initialData.floorPlans.length > 0 ? initialData.floorPlans : [{ url: "" }],
@@ -177,24 +180,8 @@ export function PropertyForm({
             <span className="sr-only">Close</span>
         </DialogClose>
         <ScrollArea className="h-[65vh] overflow-y-auto">
-          <form id="property-form" onSubmit={handleSubmit(onSubmit)} className="px-6 py-4 space-y-4">
+          <form id="property-form" onSubmit={handleSubmit(onSubmit)} className="px-6 py-4 space-y-6">
             
-            <div className="flex items-end gap-2">
-                <div className="space-y-1 flex-grow">
-                    <Label htmlFor="osmId">OSM ID</Label>
-                    <Input id="osmId" {...register("osmId")} placeholder="ID объекта из OpenStreetMap" />
-                    {errors.osmId && <p className="text-destructive text-sm">{errors.osmId.message}</p>}
-                </div>
-                <Button 
-                    type="button" 
-                    variant="secondary"
-                    onClick={handleFetchOsmData}
-                >
-                    Загрузить
-                </Button>
-            </div>
-            <Separator />
-
             <div className="space-y-2">
               <Label>Способ ввода координат</Label>
                <Controller
@@ -212,65 +199,85 @@ export function PropertyForm({
                         className="flex space-x-4 pt-1"
                     >
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="address" id="r1" disabled={!!initialData || !!watch('osmId')}/>
-                            <Label htmlFor="r1" className="font-normal">По адресу</Label>
+                            <RadioGroupItem value="osm" id="r-osm" />
+                            <Label htmlFor="r-osm" className="font-normal">По OSM ID</Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="coords" id="r2" disabled={!!initialData || !!watch('osmId')}/>
-                            <Label htmlFor="r2" className="font-normal">По карте</Label>
+                            <RadioGroupItem value="address" id="r-addr" />
+                            <Label htmlFor="r-addr" className="font-normal">По адресу</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="coords" id="r-coords" />
+                            <Label htmlFor="r-coords" className="font-normal">По карте</Label>
                         </div>
                     </RadioGroup>
                 )}
             />
             </div>
-
-            {inputType === 'address' ? (
-              <div className="space-y-1">
-                <Label htmlFor="address">Адрес</Label>
-                <Input id="address" {...register("address")} />
-                {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
-              </div>
-            ) : (
+            
+            {inputType === 'osm' && (
+                <div className="flex items-end gap-2">
+                    <div className="space-y-1 flex-grow">
+                        <Label htmlFor="osmId">OSM ID</Label>
+                        <Input id="osmId" {...register("osmId")} placeholder="ID объекта из OpenStreetMap" />
+                        {errors.osmId && <p className="text-destructive text-sm">{errors.osmId.message}</p>}
+                    </div>
+                    <Button 
+                        type="button" 
+                        variant="secondary"
+                        onClick={handleFetchOsmData}
+                    >
+                        Загрузить
+                    </Button>
+                </div>
+            )}
+            
+            {inputType === 'coords' && (
               <div className="space-y-4 rounded-lg border p-4">
                  <Button type="button" variant="outline" onClick={() => onSetIsPickingLocation(true)}>
                     <MapPin className="mr-2 h-4 w-4" />
                     Указать другую точку
                 </Button>
-                <div className="space-y-1">
-                    <Label htmlFor="address">Найденный адрес (можно изменить)</Label>
-                    <Input id="address" {...register("address")} placeholder="Адрес появится здесь..."/>
-                    {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
-                </div>
                 {/* Hidden inputs for validation */}
                 <input type="hidden" {...register("lat")} />
                 <input type="hidden" {...register("lng")} />
               </div>
             )}
-             <div className="grid grid-cols-2 gap-4">
-                 <div className="space-y-1">
-                    <Label htmlFor="year">Год постройки</Label>
-                    <Input id="year" type="text" {...register("year")} placeholder="ГГГГ или ГГГГ-ГГГГ"/>
-                    {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
-                </div>
-                <div className="space-y-1">
-                    <Label htmlFor="buildingSeries">Серия здания</Label>
-                    <Input id="buildingSeries" {...register("buildingSeries")} placeholder="Несколько серий через запятую"/>
-                    {errors.buildingSeries && <p className="text-destructive text-sm">{errors.buildingSeries.message}</p>}
-                </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                    <Label htmlFor="floors">Этажность</Label>
-                    <Input id="floors" type="number" {...register("floors")} />
-                    {errors.floors && <p className="text-destructive text-sm">{errors.floors.message}</p>}
-                </div>
-            </div>
-             <div className="space-y-1">
-                <Label htmlFor="imageUrl">URL изображения дома</Label>
-                <Input id="imageUrl" {...register("imageUrl")} />
-                {errors.imageUrl && <p className="text-destructive text-sm">{errors.imageUrl.message}</p>}
-            </div>
             
+            <Separator />
+            
+            <div className="space-y-4">
+                <div className="space-y-1">
+                    <Label htmlFor="address">Адрес</Label>
+                    <Input id="address" {...register("address")} />
+                    {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
+                </div>
+                 <div className="grid grid-cols-2 gap-4">
+                     <div className="space-y-1">
+                        <Label htmlFor="year">Год постройки</Label>
+                        <Input id="year" type="text" {...register("year")} placeholder="ГГГГ или ГГГГ-ГГГГ"/>
+                        {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="buildingSeries">Серия здания</Label>
+                        <Input id="buildingSeries" {...register("buildingSeries")} placeholder="Несколько серий через запятую"/>
+                        {errors.buildingSeries && <p className="text-destructive text-sm">{errors.buildingSeries.message}</p>}
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="floors">Этажность</Label>
+                        <Input id="floors" type="number" {...register("floors")} />
+                        {errors.floors && <p className="text-destructive text-sm">{errors.floors.message}</p>}
+                    </div>
+                </div>
+                 <div className="space-y-1">
+                    <Label htmlFor="imageUrl">URL изображения дома</Label>
+                    <Input id="imageUrl" {...register("imageUrl")} />
+                    {errors.imageUrl && <p className="text-destructive text-sm">{errors.imageUrl.message}</p>}
+                </div>
+            </div>
+
             <Separator />
             
             <div className="space-y-4">
@@ -325,3 +332,4 @@ export function PropertyForm({
     </Dialog>
   );
 }
+

@@ -396,54 +396,57 @@ export default function Home() {
     let coordinates: Coordinates | undefined;
 
     try {
-        // Priority 1: A new shape was fetched from OSM. This is the most definitive source.
-        if (osmFetchedCoords) {
-            coordinates = osmFetchedCoords;
-        } 
-        // Priority 2: User explicitly picked a location on the map. This applies to both new and edited houses.
-        else if (pickedCoords) {
-            coordinates = {
-                type: "Point",
-                points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
-            };
-        }
-        // Priority 3: We are editing an existing house and DID NOT pick a new location or fetch from OSM.
-        else if (editingHouse) {
-            coordinates = editingHouse.coordinates;
-        }
-        // Priority 4: We are creating a new house by typing an address (no map click, no OSM ID).
-        else if (values.address && !values.osmId) {
-            const { OpenStreetMapProvider } = await import("leaflet-geosearch");
-            const provider = new OpenStreetMapProvider({
-              params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
-            });
-            const results = await provider.search({ query: values.address });
-
-            if (results && results.length > 0) {
-            const result = results[0];
-            const geojson = (result.raw as any).geojson;
-            if (
-                geojson &&
-                (geojson.type === "Polygon" || geojson.type === "MultiPolygon")
-            ) {
-                const polygonCoords =
-                geojson.type === "Polygon"
-                    ? geojson.coordinates[0]
-                    : geojson.coordinates[0][0];
-                coordinates = {
-                type: "Polygon",
-                points: polygonCoords.map((p: [number, number]) => ({
-                    lat: p[1],
-                    lng: p[0],
-                })),
-                };
+        if (values.inputType === 'osm') {
+            if (osmFetchedCoords) {
+                coordinates = osmFetchedCoords;
+            } else if (editingHouse && editingHouse.osmId === values.osmId) {
+                coordinates = editingHouse.coordinates;
             } else {
-                // If geocoding finds a result but no polygon, use its point.
-                coordinates = {
-                type: "Point",
-                points: [{ lat: result.y, lng: result.x }],
-                };
+                 toast({
+                  variant: "destructive",
+                  title: "Ошибка данных OSM",
+                  description: "Пожалуйста, нажмите 'Загрузить', чтобы получить данные из OSM, прежде чем сохранять.",
+                });
+                return;
             }
+        } else if (values.inputType === 'coords') {
+            if (pickedCoords) {
+                coordinates = {
+                    type: "Point",
+                    points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+                };
+            } else if (editingHouse) {
+                coordinates = editingHouse.coordinates;
+            } else {
+                toast({
+                  variant: "destructive",
+                  title: "Местоположение не выбрано",
+                  description: "Пожалуйста, укажите точку на карте, прежде чем сохранять.",
+                });
+                return;
+            }
+        } else { // inputType is 'address'
+            if (editingHouse && editingHouse.address === values.address) {
+                // Address is unchanged on an existing house, so reuse old coordinates.
+                coordinates = editingHouse.coordinates;
+            } else {
+                // New house, or address has changed on an existing house. Geocode it.
+                const { OpenStreetMapProvider } = await import("leaflet-geosearch");
+                const provider = new OpenStreetMapProvider({
+                    params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
+                });
+                const results = await provider.search({ query: values.address });
+
+                if (results && results.length > 0) {
+                    const result = results[0];
+                    const geojson = (result.raw as any).geojson;
+                    if (geojson && (geojson.type === "Polygon" || geojson.type === "MultiPolygon")) {
+                        const polygonCoords = geojson.type === "Polygon" ? geojson.coordinates[0] : geojson.coordinates[0][0];
+                        coordinates = { type: "Polygon", points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })) };
+                    } else {
+                        coordinates = { type: "Point", points: [{ lat: result.y, lng: result.x }] };
+                    }
+                }
             }
         }
       
@@ -500,7 +503,7 @@ export default function Home() {
       toast({ title: "Дом успешно добавлен" });
     }
     handleFormClose();
-  }, [firestore, toast, editingHouse, pickedCoords, osmFetchedCoords, handleFormClose, handleFetchFromOSM]);
+  }, [firestore, toast, editingHouse, pickedCoords, osmFetchedCoords, handleFormClose]);
 
   const handleDeleteHouse = (houseId: string) => {
     if (!firestore || !user) {
