@@ -392,71 +392,92 @@ export default function Home() {
     let coordinates: Coordinates | undefined;
 
     try {
-        if (values.inputType === 'coords') {
-            if (pickedCoords) {
-                coordinates = {
-                    type: "Point",
-                    points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
-                };
-            } else if (editingHouse) {
-                coordinates = editingHouse.coordinates;
-            } else {
-                toast({
-                  variant: "destructive",
-                  title: "Местоположение не выбрано",
-                  description: "Пожалуйста, укажите точку на карте, прежде чем сохранять.",
-                });
-                return;
+      if (values.inputType === 'coords') {
+        if (pickedCoords) {
+          // Reverse geocode to find the polygon for the clicked point
+          const reverseGeocodeResponse = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${pickedCoords.lat}&lon=${pickedCoords.lng}&polygon_geojson=1&zoom=18&accept-language=ru`
+          );
+          if (!reverseGeocodeResponse.ok) {
+            throw new Error("Reverse geocoding for geometry request failed");
+          }
+          const result = await reverseGeocodeResponse.json();
+
+          if (result && result.geojson) {
+            const geojson = result.geojson;
+            if (geojson.type === "Polygon" || geojson.type === "MultiPolygon") {
+              const polygonCoords = geojson.type === "Polygon" ? geojson.coordinates[0] : geojson.coordinates[0][0];
+              coordinates = { type: "Polygon", points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })) };
             }
-        } else if (values.inputType === 'osm') {
-            if (osmFetchedCoords) {
-                coordinates = osmFetchedCoords;
-            } else if (editingHouse && editingHouse.osmId === values.osmId) {
-                coordinates = editingHouse.coordinates;
-            } else {
-                 toast({
-                  variant: "destructive",
-                  title: "Ошибка данных OSM",
-                  description: "Пожалуйста, нажмите 'Загрузить', чтобы получить данные из OSM, прежде чем сохранять.",
-                });
-                return;
-            }
-        } else { // inputType is 'address'
-            if (editingHouse && editingHouse.address === values.address) {
-                // Address is unchanged on an existing house, so reuse old coordinates.
-                coordinates = editingHouse.coordinates;
-            } else {
-                // New house, or address has changed on an existing house. Geocode it directly.
-                const searchParams = new URLSearchParams({
-                    q: values.address,
-                    format: 'json',
-                    polygon_geojson: '1',
-                    addressdetails: '1',
-                    countrycodes: 'ru'
-                });
-
-                const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?${searchParams.toString()}`);
-                
-                if (!geocodeResponse.ok) {
-                    throw new Error("Geocoding request failed");
-                }
-
-                const results = await geocodeResponse.json();
-
-                if (results && results.length > 0) {
-                    const result = results[0]; // Take the first, most relevant result
-                    const geojson = result.geojson;
-
-                    if (geojson && (geojson.type === "Polygon" || geojson.type === "MultiPolygon")) {
-                        const polygonCoords = geojson.type === "Polygon" ? geojson.coordinates[0] : geojson.coordinates[0][0];
-                        coordinates = { type: "Polygon", points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })) };
-                    } else {
-                        // Fallback to point if no polygon is found
-                        coordinates = { type: "Point", points: [{ lat: parseFloat(result.lat), lng: parseFloat(result.lon) }] };
-                    }
-                }
-            }
+          }
+          // Fallback to point if no polygon is found from reverse geocoding
+          if (!coordinates) {
+            coordinates = {
+              type: "Point",
+              points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+            };
+          }
+        } else if (editingHouse) {
+          // If editing, but not picking new coords, keep existing ones.
+          coordinates = editingHouse.coordinates;
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Местоположение не выбрано",
+            description: "Пожалуйста, укажите точку на карте, прежде чем сохранять.",
+          });
+          return;
         }
+      } else if (values.inputType === 'osm') {
+          if (osmFetchedCoords) {
+              coordinates = osmFetchedCoords;
+          } else if (editingHouse && editingHouse.osmId === values.osmId) {
+              // If osmId hasn't changed on an existing house, reuse old coordinates
+              coordinates = editingHouse.coordinates;
+          } else {
+               toast({
+                variant: "destructive",
+                title: "Ошибка данных OSM",
+                description: "Пожалуйста, нажмите 'Загрузить', чтобы получить данные из OSM, прежде чем сохранять.",
+              });
+              return;
+          }
+      } else { // inputType is 'address'
+          if (editingHouse && editingHouse.address === values.address) {
+              // Address is unchanged on an existing house, so reuse old coordinates.
+              coordinates = editingHouse.coordinates;
+          } else {
+              // New house, or address has changed on an existing house. Geocode it directly.
+              const searchParams = new URLSearchParams({
+                  q: values.address,
+                  format: 'json',
+                  polygon_geojson: '1',
+                  addressdetails: '1',
+                  countrycodes: 'ru'
+              });
+
+              const geocodeResponse = await fetch(`https://nominatim.openstreetmap.org/search?${searchParams.toString()}`);
+              
+              if (!geocodeResponse.ok) {
+                  throw new Error("Geocoding request failed");
+              }
+
+              const results = await geocodeResponse.json();
+
+              if (results && results.length > 0) {
+                  const result = results[0]; // Take the first, most relevant result
+                  const geojson = result.geojson;
+
+                  if (geojson && (geojson.type === "Polygon" || geojson.type === "MultiPolygon")) {
+                      const polygonCoords = geojson.type === "Polygon" ? geojson.coordinates[0] : geojson.coordinates[0][0];
+                      coordinates = { type: "Polygon", points: polygonCoords.map((p: [number, number]) => ({ lat: p[1], lng: p[0] })) };
+                  } else {
+                      // Fallback to point if no polygon is found
+                      coordinates = { type: "Point", points: [{ lat: parseFloat(result.lat), lng: parseFloat(result.lon) }] };
+                  }
+              }
+          }
+      }
       
       // If after all attempts, we still don't have coordinates, show an error.
       if (!coordinates) {
@@ -609,6 +630,8 @@ export default function Home() {
     </div>
   );
 }
+
+    
 
     
 
