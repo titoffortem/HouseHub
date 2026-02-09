@@ -403,12 +403,11 @@ export default function Home() {
             };
         }
         // Priority 3: We are editing an existing house and DID NOT pick a new location or fetch from OSM.
-        // In this case, we reuse the existing coordinates and just update the text fields.
         else if (editingHouse) {
             coordinates = editingHouse.coordinates;
         }
-        // Priority 4: We are creating a new house by typing an address (no map click, no OSM).
-        else if (values.address) {
+        // Priority 4: We are creating a new house by typing an address (no map click, no OSM ID).
+        else if (values.address && !values.osmId) {
             const { OpenStreetMapProvider } = await import("leaflet-geosearch");
             const provider = new OpenStreetMapProvider({
               params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
@@ -448,7 +447,7 @@ export default function Home() {
         toast({
           variant: "destructive",
           title: "Ошибка геокодирования",
-          description: "Не удалось найти координаты для указанного адреса. Попробуйте указать точнее.",
+          description: "Не удалось найти координаты для указанного адреса. Попробуйте указать точнее или через OSM ID.",
         });
         return;
       }
