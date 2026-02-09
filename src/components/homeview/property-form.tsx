@@ -83,7 +83,7 @@ export function PropertyForm({
     reset,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, dirtyFields },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -156,7 +156,13 @@ export function PropertyForm({
     if (osmId) {
         const fetchedData = await onFetchFromOSM(osmId);
         if (fetchedData) {
-            Object.entries(fetchedData).forEach(([key, value]) => {
+            const newValues = { ...fetchedData };
+            // If the user has already manually edited the address, don't overwrite it.
+            if (dirtyFields.address) {
+              delete newValues.address;
+            }
+
+            Object.entries(newValues).forEach(([key, value]) => {
                 if (value !== undefined) {
                     setValue(key as keyof FormValues, value, { shouldValidate: true });
                 }
@@ -333,3 +339,5 @@ export function PropertyForm({
   );
 }
 
+
+    
