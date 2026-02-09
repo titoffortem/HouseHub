@@ -322,8 +322,8 @@ export default function Home() {
     }
 
     try {
-        // Use the Russian Overpass mirror and a more robust query for ways and relations
-        const response = await fetch(`https://overpass.openstreetmap.ru/api/interpreter?data=[out:json];(rel(${osmId});way(${osmId}););(._;>;);out geom;`);
+        // Use the main Overpass mirror and a more robust query for ways and relations
+        const response = await fetch(`https://overpass-api.de/api/interpreter?data=[out:json];(rel(${osmId});way(${osmId}););(._;>;);out geom;`);
         if (!response.ok) {
             throw new Error('OSM Overpass API request failed');
         }
