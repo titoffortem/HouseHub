@@ -391,51 +391,55 @@ export default function Home() {
     let coordinates: Coordinates | undefined;
 
     try {
+        // Priority 1: A new shape was fetched from OSM. This is the most definitive source.
         if (osmFetchedCoords) {
             coordinates = osmFetchedCoords;
-        } else {
-            // Standard geocoding by address (for edits, manual adds, or as a reliable fallback for map clicks)
-            if (values.address) {
-                const { OpenStreetMapProvider } = await import("leaflet-geosearch");
-                const provider = new OpenStreetMapProvider({
-                  params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
-                });
-                const results = await provider.search({ query: values.address });
+        } 
+        // Priority 2: User explicitly picked a location on the map. This applies to both new and edited houses.
+        else if (pickedCoords) {
+            coordinates = {
+                type: "Point",
+                points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+            };
+        }
+        // Priority 3: We are editing an existing house and DID NOT pick a new location or fetch from OSM.
+        // In this case, we reuse the existing coordinates and just update the text fields.
+        else if (editingHouse) {
+            coordinates = editingHouse.coordinates;
+        }
+        // Priority 4: We are creating a new house by typing an address (no map click, no OSM).
+        else if (values.address) {
+            const { OpenStreetMapProvider } = await import("leaflet-geosearch");
+            const provider = new OpenStreetMapProvider({
+              params: { polygon_geojson: 1, addressdetails: 1, countrycodes: 'ru' },
+            });
+            const results = await provider.search({ query: values.address });
 
-                if (results && results.length > 0) {
-                const result = results[0];
-                const geojson = (result.raw as any).geojson;
-                if (
-                    geojson &&
-                    (geojson.type === "Polygon" || geojson.type === "MultiPolygon")
-                ) {
-                    const polygonCoords =
-                    geojson.type === "Polygon"
-                        ? geojson.coordinates[0]
-                        : geojson.coordinates[0][0];
-                    coordinates = {
-                    type: "Polygon",
-                    points: polygonCoords.map((p: [number, number]) => ({
-                        lat: p[1],
-                        lng: p[0],
-                    })),
-                    };
-                } else {
-                    // If geocoding finds a result but no polygon, use its point.
-                    coordinates = {
-                    type: "Point",
-                    points: [{ lat: result.y, lng: result.x }],
-                    };
-                }
-                }
-            }
-
-            // Fallback for new houses if all geocoding fails: use the clicked point.
-            if (!coordinates && editingHouse === null && pickedCoords) {
+            if (results && results.length > 0) {
+            const result = results[0];
+            const geojson = (result.raw as any).geojson;
+            if (
+                geojson &&
+                (geojson.type === "Polygon" || geojson.type === "MultiPolygon")
+            ) {
+                const polygonCoords =
+                geojson.type === "Polygon"
+                    ? geojson.coordinates[0]
+                    : geojson.coordinates[0][0];
                 coordinates = {
-                    type: "Point",
-                    points: [{ lat: pickedCoords.lat, lng: pickedCoords.lng }],
+                type: "Polygon",
+                points: polygonCoords.map((p: [number, number]) => ({
+                    lat: p[1],
+                    lng: p[0],
+                })),
                 };
+            } else {
+                // If geocoding finds a result but no polygon, use its point.
+                coordinates = {
+                type: "Point",
+                points: [{ lat: result.y, lng: result.x }],
+                };
+            }
             }
         }
       
