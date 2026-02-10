@@ -351,7 +351,9 @@ export default function Home() {
             coordinates,
             address: '',
             year: '',
+            projectType: 'Типовой',
             buildingSeries: [],
+            purpose: '',
             floors: 0,
             imageUrl: '',
             floorPlans: []
@@ -504,7 +506,10 @@ export default function Home() {
         osmId: values.osmId || "",
         address: values.address,
         year: values.year,
-        buildingSeries: values.buildingSeries.split(',').map(s => s.trim()).filter(Boolean),
+        projectType: values.projectType,
+        buildingSeries: values.projectType === 'Типовой' ? values.buildingSeries.split(',').map(s => s.trim()).filter(Boolean) : [],
+        architect: values.projectType === 'Индивидуальный' ? values.architect : "",
+        purpose: values.purpose,
         floors: values.floors,
         imageUrl: values.imageUrl,
         floorPlans: values.floorPlans,
@@ -630,9 +635,3 @@ export default function Home() {
     </div>
   );
 }
-
-    
-
-    
-
-    

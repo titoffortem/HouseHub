@@ -11,8 +11,10 @@ import {
   Building,
   Calendar,
   ChevronsUpDown,
+  ClipboardList,
   Pencil,
   Trash2,
+  User,
 } from "lucide-react";
 import { FloorPlan } from "./floor-plan";
 import { Button } from "../ui/button";
@@ -89,6 +91,11 @@ export function PropertyDetails({
             Детали объекта
           </h3>
           <div className="grid grid-cols-2 gap-x-4 gap-y-6">
+             <DetailItem
+              icon={<ClipboardList className="h-5 w-5" />}
+              label="Предназначение"
+              value={house.purpose}
+            />
             <DetailItem
               icon={<Calendar className="h-5 w-5" />}
               label="Год постройки"
@@ -96,9 +103,22 @@ export function PropertyDetails({
             />
             <DetailItem
               icon={<Building className="h-5 w-5" />}
-              label="Серия здания"
-              value={Array.isArray(house.buildingSeries) ? house.buildingSeries.join(', ') : house.buildingSeries}
+              label="Тип проекта"
+              value={house.projectType}
             />
+            {house.projectType === 'Типовой' ? (
+              <DetailItem
+                icon={<Building className="h-5 w-5" />}
+                label="Серия здания"
+                value={Array.isArray(house.buildingSeries) ? house.buildingSeries.join(', ') : house.buildingSeries}
+              />
+            ) : (
+              <DetailItem
+                icon={<User className="h-5 w-5" />}
+                label="Архитектор"
+                value={house.architect || 'Не указан'}
+              />
+            )}
             <div className="flex items-center justify-between col-span-2">
                <DetailItem
                 icon={<ChevronsUpDown className="h-5 w-5" />}

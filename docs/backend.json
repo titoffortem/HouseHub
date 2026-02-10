@@ -57,10 +57,23 @@
           "type": "string",
           "description": "The construction year or year range of the house (e.g., '1985' or '1990-1995')."
         },
+        "projectType": {
+          "type": "string",
+          "enum": ["Типовой", "Индивидуальный"],
+          "description": "The project type of the house."
+        },
         "buildingSeries": {
           "type": "array",
-          "description": "The building series the house belongs to. Can contain multiple series.",
+          "description": "The building series the house belongs to (for typical projects). Can contain multiple series.",
           "items": { "type": "string" }
+        },
+        "architect": {
+          "type": "string",
+          "description": "The architect of the house (for individual projects)."
+        },
+        "purpose": {
+            "type": "string",
+            "description": "The purpose of the building (e.g., Жилой, Общественный)."
         },
         "floors": {
           "type": "number",
@@ -81,7 +94,8 @@
         "address",
         "coordinates",
         "year",
-        "buildingSeries",
+        "projectType",
+        "purpose",
         "floors",
         "imageUrl",
         "floorPlans"
