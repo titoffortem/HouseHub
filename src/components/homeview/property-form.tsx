@@ -31,13 +31,16 @@ const formSchema = z.object({
   osmId: z.string().optional(),
   address: z.string().min(1, "Адрес обязателен"),
   year: z.string().regex(/^\d{4}(?:-\d{4})?$/, { message: "Год должен быть в формате ГГГГ или ГГГГ-ГГГГ" }).min(1, "Год постройки обязателен"),
-  buildingSeries: z.string().min(1, "Серия здания обязательна"),
+  projectType: z.enum(['Типовой', 'Индивидуальный']).default('Типовой'),
+  buildingSeries: z.string(),
+  architect: z.string().optional(),
+  purpose: z.string().min(1, "Предназначение обязательно"),
   floors: z.coerce.number().int().positive("Должно быть положительное число"),
   imageUrl: z.string().url("Должен быть действительный URL").or(z.literal("")),
   floorPlans: z.array(floorPlanSchema),
   lat: z.coerce.number().optional(),
   lng: z.coerce.number().optional(),
-  inputType: z.enum(['osm', 'address', 'coords']).default('address'),
+  inputType: z.enum(['address', 'coords', 'osm']).default('address'),
 }).superRefine((data, ctx) => {
     if (data.inputType === 'coords') {
         if (data.lat === undefined || Number.isNaN(data.lat)) {
@@ -49,6 +52,20 @@ const formSchema = z.object({
     }
     if (data.inputType === 'osm' && !data.osmId) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['osmId'], message: 'OSM ID обязателен' });
+    }
+    if (data.projectType === 'Типовой' && !data.buildingSeries) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['buildingSeries'],
+            message: 'Серия здания обязательна для типового проекта'
+        });
+    }
+    if (data.projectType === 'Индивидуальный' && (!data.architect || data.architect.trim() === '')) {
+        ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['architect'],
+            message: 'Архитектор обязателен для индивидуального проекта'
+        });
     }
 });
 
@@ -93,6 +110,10 @@ export function PropertyForm({
       inputType: "address",
       imageUrl: "",
       floorPlans: [],
+      projectType: 'Типовой',
+      buildingSeries: '',
+      architect: '',
+      purpose: '',
     },
   });
 
@@ -102,6 +123,7 @@ export function PropertyForm({
   });
   
   const inputType = watch("inputType");
+  const projectType = watch("projectType");
 
   useEffect(() => {
     if (!open) {
@@ -114,7 +136,10 @@ export function PropertyForm({
         ...initialData,
         osmId: initialData.osmId || "",
         year: String(initialData.year),
+        projectType: initialData.projectType || 'Типовой',
         buildingSeries: Array.isArray(initialData.buildingSeries) ? initialData.buildingSeries.join(', ') : (initialData.buildingSeries || ''),
+        architect: initialData.architect || '',
+        purpose: initialData.purpose || '',
         inputType: initialData.osmId ? 'osm' : 'address',
         lat: initialData.coordinates.points[0]?.lat,
         lng: initialData.coordinates.points[0]?.lng,
@@ -140,7 +165,10 @@ export function PropertyForm({
         osmId: "",
         address: "",
         year: "",
+        projectType: 'Типовой',
         buildingSeries: "",
+        architect: "",
+        purpose: "",
         floors: 1,
         imageUrl: "",
         floorPlans: [{ url: "" }],
@@ -156,9 +184,9 @@ export function PropertyForm({
     if (osmId) {
         const fetchedData = await onFetchFromOSM(osmId);
         if (fetchedData) {
-            const newValues = { ...fetchedData };
+            const newValues: Partial<FormValues> = { ...fetchedData };
             // If the user has already manually edited the address, don't overwrite it.
-            if (dirtyFields.address) {
+            if (dirtyFields.address && newValues.address) {
               delete newValues.address;
             }
 
@@ -258,19 +286,52 @@ export function PropertyForm({
                     <Input id="address" {...register("address")} />
                     {errors.address && <p className="text-destructive text-sm">{errors.address.message}</p>}
                 </div>
+                
+                <div className="space-y-1">
+                    <Label htmlFor="purpose">Предназначение</Label>
+                    <Input id="purpose" {...register("purpose")} placeholder="например, Жилой, Общественный"/>
+                    {errors.purpose && <p className="text-destructive text-sm">{errors.purpose.message}</p>}
+                </div>
+                
+                <div className="space-y-2">
+                    <Label>Тип проекта</Label>
+                    <Controller
+                        control={control}
+                        name="projectType"
+                        render={({ field }) => (
+                            <RadioGroup onValueChange={field.onChange} value={field.value} className="flex space-x-4 pt-1">
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="Типовой" id="pt-typical" />
+                                    <Label htmlFor="pt-typical" className="font-normal">Типовой</Label>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value="Индивидуальный" id="pt-individual" />
+                                    <Label htmlFor="pt-individual" className="font-normal">Индивидуальный</Label>
+                                </div>
+                            </RadioGroup>
+                        )}
+                    />
+                </div>
+
+                {projectType === 'Типовой' ? (
+                  <div className="space-y-1">
+                      <Label htmlFor="buildingSeries">Серия здания</Label>
+                      <Input id="buildingSeries" {...register("buildingSeries")} placeholder="Несколько серий через запятую"/>
+                      {errors.buildingSeries && <p className="text-destructive text-sm">{errors.buildingSeries.message}</p>}
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                      <Label htmlFor="architect">Архитектор</Label>
+                      <Input id="architect" {...register("architect")} />
+                      {errors.architect && <p className="text-destructive text-sm">{errors.architect.message}</p>}
+                  </div>
+                )}
                  <div className="grid grid-cols-2 gap-4">
                      <div className="space-y-1">
                         <Label htmlFor="year">Год постройки</Label>
                         <Input id="year" type="text" {...register("year")} placeholder="ГГГГ или ГГГГ-ГГГГ"/>
                         {errors.year && <p className="text-destructive text-sm">{errors.year.message}</p>}
                     </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="buildingSeries">Серия здания</Label>
-                        <Input id="buildingSeries" {...register("buildingSeries")} placeholder="Несколько серий через запятую"/>
-                        {errors.buildingSeries && <p className="text-destructive text-sm">{errors.buildingSeries.message}</p>}
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <Label htmlFor="floors">Этажность</Label>
                         <Input id="floors" type="number" {...register("floors")} />
@@ -338,6 +399,3 @@ export function PropertyForm({
     </Dialog>
   );
 }
-
-
-    

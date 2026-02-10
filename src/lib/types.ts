@@ -18,7 +18,10 @@ export type House = {
   address: string;
   coordinates: Coordinates;
   year: string;
+  projectType: 'Типовой' | 'Индивидуальный';
   buildingSeries: string[];
+  architect?: string;
+  purpose: string;
   floors: number;
   imageUrl: string;
   floorPlans: FloorPlan[];
