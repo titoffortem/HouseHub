@@ -508,7 +508,7 @@ export default function Home() {
         year: values.year,
         projectType: values.projectType,
         buildingSeries: values.projectType === 'Типовой' ? values.buildingSeries.split(',').map(s => s.trim()).filter(Boolean) : [],
-        architect: values.projectType === 'Индивидуальный' ? values.architect : undefined,
+        architect: values.projectType === 'Индивидуальный' ? values.architect : "",
         purpose: values.purpose,
         floors: values.floors,
         imageUrl: values.imageUrl,
